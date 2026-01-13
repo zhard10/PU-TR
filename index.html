@@ -136,9 +136,57 @@
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
         // --- Config & Data Injection (Ver 24.0) ---
-        // 事故軽減ロジック用設定: ロール保証の対象となる例外ポケモンID (例: スイクン)
+        // 構成保証ロジック用設定: ロール保証の対象となる例外ポケモンID (例: スイクン)
         // タンク/サポート枠として扱うポケモンのIDリスト
         const CONFIG_TANK_SUPPORT_EXCEPTIONS = [7]; 
+
+
+        // --- Tournament Meta (PUACL 2025 Day1-4) ---
+        // PUACL 2025 Day1-4 全230試合のピック実績から、使用回数が12回以上（約5%ライン超）のポケモン41匹
+        const TOURNAMENT_META_DATA = [
+            { name: "バシャーモ", count: 114 },
+            { name: "カビゴン", count: 107 },
+            { name: "リーフィア", count: 104 },
+            { name: "カメックス", count: 90 },
+            { name: "ミライドン", count: 85 },
+            { name: "ハピナス", count: 84 },
+            { name: "ルカリオ", count: 80 },
+            { name: "マホイップ", count: 79 },
+            { name: "ミュウ", count: 78 },
+            { name: "ミュウツーY", count: 77 },
+            { name: "ザシアン", count: 70 },
+            { name: "ドードリオ", count: 69 },
+            { name: "マッシブーン", count: 68 },
+            { name: "ウーラオス", count: 63 },
+            { name: "アローラライチュウ", count: 63 },
+            { name: "ギャラドス", count: 61 },
+            { name: "ミミッキュ", count: 61 },
+            { name: "コダック", count: 59 },
+            { name: "ワタシラガ", count: 58 },
+            { name: "ピクシー", count: 54 },
+            { name: "ハッサム", count: 54 },
+            { name: "バリヤード", count: 53 },
+            { name: "リザードン", count: 47 },
+            { name: "マンムー", count: 46 },
+            { name: "イワパレス", count: 45 },
+            { name: "ブラッキー", count: 45 },
+            { name: "アマージョ", count: 44 },
+            { name: "グレイシア", count: 43 },
+            { name: "ラティアス", count: 42 },
+            { name: "ミュウツーX", count: 34 },
+            { name: "フーパ", count: 31 },
+            { name: "ヤドラン", count: 31 },
+            { name: "スイクン", count: 30 },
+            { name: "オーロット", count: 23 },
+            { name: "キュワワー", count: 20 },
+            { name: "インテレオン", count: 19 },
+            { name: "ラティオス", count: 18 },
+            { name: "エンペルト", count: 14 },
+            { name: "エーフィ", count: 13 },
+            { name: "ダークライ", count: 12 },
+            { name: "ラプラス", count: 12 },
+        ];
+        const TOURNAMENT_META_SET = new Set(TOURNAMENT_META_DATA.map(d => d.name));
 
         // Looksデータマッピング (Index 4)
         const LOOKS_MAP = {
@@ -177,6 +225,13 @@
         const Camera = (p) => <IconBase {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></IconBase>;
         const SettingsIcon = (p) => <IconBase {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" /></IconBase>;
         const ShieldCheck = (p) => <IconBase {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></IconBase>;
+const Trophy = (p) => <IconBase {...p}>
+    <path d="M8 21h8" />
+    <path d="M12 17v4" />
+    <path d="M7 4h10v3a5 5 0 0 1-10 0V4Z" />
+    <path d="M5 7h2a5 5 0 0 1-2 4V7Z" />
+    <path d="M19 7h-2a5 5 0 0 0 2 4V7Z" />
+</IconBase>;
         const DatabaseIcon = (p) => <IconBase {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></IconBase>;
         const ArrowLeft = (p) => <IconBase {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></IconBase>;
         const FilterIcon = (p) => <IconBase {...p}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></IconBase>;
@@ -277,6 +332,16 @@
                 }
             }, [playTone]);
             return { startSpinSound, slowdownSpinSound, playResultSound };
+            };
+
+        // 乱択シャッフル: sort(Math.random)は偏りが出るためFisher–Yatesを使用
+        const shuffleArray = (arr) => {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
         };
 
         // --- Data Definitions (Ver 24.0) ---
@@ -770,34 +835,52 @@
             </div>
         );
         
-        const PlayerCountSelector = ({ playerCount, setPlayerCount, isSafeMode, setIsSafeMode }) => (
-            <div className="w-full max-w-md md:max-w-3xl mx-auto px-4 mb-4">
-                <h3 className="text-sm font-bold text-white/80 mb-2 flex items-center justify-center gap-2 font-jp">
-                    <Users size={14} /> Players <span className="text-[10px] opacity-60 ml-2 font-sans font-normal tracking-normal">参加人数を選択</span>
-                </h3>
-                <div className="grid grid-cols-4 gap-2 md:gap-4 mb-2">
-                    {PLAYER_COUNTS.map((p) => (
-                        <button key={p.count} onClick={() => setPlayerCount(p.count)} className={`py-2 md:py-4 rounded-lg font-jp font-bold text-xs md:text-base transition-all border ${playerCount === p.count ? 'bg-neon-blue text-white border-white shadow-[0_0_10px_rgba(96,165,250,0.6)]' : 'bg-black/30 text-white/50 border-white/10 hover:bg-white/10'}`}>
-                            {p.label}
-                        </button>
-                    ))}
-                </div>
-                {playerCount > 1 && (
-                    <div className="flex justify-center items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                        <label className="flex items-center cursor-pointer relative">
-                            <input type="checkbox" checked={isSafeMode} onChange={(e) => setIsSafeMode(e.target.checked)} className="sr-only peer" />
-                            <div className="w-8 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-500"></div>
-                            <span className="ml-2 text-[10px] font-bold text-white flex items-center gap-1 font-sans">
-                                <ShieldCheck size={12} className={isSafeMode ? "text-green-400" : "text-gray-400"}/> 
-                                事故軽減モード
-                            </span>
-                        </label>
-                    </div>
-                )}
-            </div>
-        );
+        
+const PlayerCountSelector = ({ 
+    playerCount, 
+    setPlayerCount, 
+    isCompGuaranteeMode, 
+    setIsCompGuaranteeMode,
+    isTournamentMetaMode,
+    setIsTournamentMetaMode
+}) => (
+    <div className="w-full max-w-md md:max-w-3xl mx-auto px-4 mb-4">
+        <h3 className="text-sm font-bold text-white/80 mb-2 flex items-center justify-center gap-2 font-jp">
+            <Users size={14} /> Players <span className="text-[10px] opacity-60 ml-2 font-sans font-normal tracking-normal">参加人数を選択</span>
+        </h3>
+        <div className="grid grid-cols-4 gap-2 md:gap-4 mb-2">
+            {PLAYER_COUNTS.map((p) => (
+                <button key={p.count} onClick={() => setPlayerCount(p.count)} className={`py-2 md:py-4 rounded-lg font-jp font-bold text-xs md:text-base transition-all border ${playerCount === p.count ? 'bg-neon-blue text-white border-white shadow-[0_0_10px_rgba(96,165,250,0.6)]' : 'bg-black/30 text-white/50 border-white/10 hover:bg-white/10'}`}>
+                    {p.label}
+                </button>
+            ))}
+        </div>
 
-        const SecondaryCandidates = ({ others, onSelect, categoryLabel, currentSelection, allSelections }) => {
+        <div className="flex flex-col items-center gap-2 mt-2 animate-in fade-in slide-in-from-top-1">
+            {playerCount > 1 && (
+                <label className="flex items-center cursor-pointer relative">
+                    <input type="checkbox" checked={isCompGuaranteeMode} onChange={(e) => setIsCompGuaranteeMode(e.target.checked)} className="sr-only peer" />
+                    <div className="w-8 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-500"></div>
+                    <span className="ml-2 text-[10px] font-bold text-white flex items-center gap-1 font-sans">
+                        <ShieldCheck size={12} className={isCompGuaranteeMode ? "text-green-400" : "text-gray-400"}/> 
+                        構成保証モード
+                    </span>
+                </label>
+            )}
+
+            <label className="flex items-center cursor-pointer relative">
+                <input type="checkbox" checked={isTournamentMetaMode} onChange={(e) => setIsTournamentMetaMode(e.target.checked)} className="sr-only peer" />
+                <div className="w-8 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-500"></div>
+                <span className="ml-2 text-[10px] font-bold text-white flex items-center gap-1 font-sans">
+                    <Trophy size={12} className={isTournamentMetaMode ? "text-neon-yellow" : "text-gray-400"}/> 
+                    大会メタモード
+                </span>
+            </label>
+        </div>
+    </div>
+);
+
+const SecondaryCandidates = ({ others, onSelect, categoryLabel, currentSelection, allSelections }) => {
             if (!others || others.length === 0) return null;
             const formatLabel = (label) => {
                  const match = label ? label.match(/^(.*?)(（.*）|\(.*\))?$/) : null;
@@ -852,7 +935,7 @@
             const laneColorClass = getLaneColor(result.lane);
 
             const shareTwitter = () => {
-                const shuffledTags = [...displayPokemon.tags].sort(() => 0.5 - Math.random()).slice(0, 3);
+                const shuffledTags = shuffleArray(displayPokemon.tags).slice(0, 3);
                 const tagsText = shuffledTags.join(' ');
                 const text = `今日のポケモンは【${displayPokemon.name}】！\nレーン: ${result.lane}\nテーマ: ${result.categoryLabel}\n\n${tagsText}\n\n運命のルーレット結果 👉 #PU_TR #PokemonUNITE\n勝敗は運命次第！？`;
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
@@ -1028,7 +1111,71 @@
             );
         };
 
-        const Footer = ({ onOpenDatabase }) => (
+        
+// --- Tournament Meta View ---
+const TournamentMetaView = ({ onBack }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const filtered = useMemo(() => {
+        if (!searchTerm) return TOURNAMENT_META_DATA;
+        return TOURNAMENT_META_DATA.filter(d => d.name.includes(searchTerm));
+    }, [searchTerm]);
+
+    return (
+        <div className="w-full max-w-4xl mx-auto px-4 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center justify-between mb-4 sticky top-0 bg-aeos-darker/90 backdrop-blur-md z-30 py-3 border-b border-white/10 -mx-4 px-4">
+                <button onClick={onBack} className="flex items-center gap-1 text-white hover:text-neon-cyan transition-colors">
+                    <ArrowLeft size={20} />
+                    <span className="font-bold text-sm font-sans">戻る</span>
+                </button>
+                <h2 className="text-lg font-bold text-white font-jp flex items-center gap-2">
+                    <Trophy size={20} className="text-neon-yellow" />
+                    大会メタデータ
+                    <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full text-white/70 font-sans">{TOURNAMENT_META_DATA.length}匹</span>
+                </h2>
+            </div>
+
+            <div className="mb-6 space-y-3">
+                <div className="glass-panel p-3 rounded-xl flex flex-col gap-3">
+                    <p className="text-[11px] text-white/70 leading-relaxed font-sans">
+                        PUACL 2025 Day1-4（全230試合）で使用回数12回以上（約5%ライン超）のピック実績データです。
+                    </p>
+                    <div className="relative">
+                        <input 
+                            type="text" 
+                            placeholder="ポケモン名で検索" 
+                            className="w-full bg-black/30 border border-white/20 rounded-lg py-2 md:py-3 px-4 text-sm md:text-base text-white placeholder-white/30 focus:outline-none focus:border-neon-cyan transition-colors font-sans"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="glass-panel rounded-xl overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm font-sans">
+                        <thead className="bg-black/30 text-white/80 text-xs">
+                            <tr>
+                                <th className="p-3">ポケモン</th>
+                                <th className="p-3 text-right">使用回数</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map(d => (
+                                <tr key={d.name} className="border-t border-white/10 hover:bg-white/5">
+                                    <td className="p-3 font-bold text-white">{d.name}</td>
+                                    <td className="p-3 text-right font-bold text-neon-yellow">{d.count}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const Footer = ({ onOpenDatabase, onOpenTournamentMeta }) => (
             <footer className="w-full bg-aeos-darker text-[10px] md:text-xs py-10 px-4 mt-8 border-t border-white/10 font-sans">
                 <div className="max-w-4xl md:max-w-6xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mb-8">
@@ -1082,14 +1229,21 @@
                                             収録ポケモンリストを見る
                                         </button>
                                     </div>
+                                    <div className="mt-2 flex justify-center">
+                                        <button onClick={onOpenTournamentMeta} className="bg-neon-yellow/20 text-neon-yellow border border-neon-yellow/50 hover:bg-neon-yellow hover:text-aeos-darker font-bold py-2 px-6 rounded-full transition-all text-xs flex items-center gap-2 font-jp">
+                                            <Trophy size={14} />
+                                            大会メタデータを見る
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-white text-xs mb-1 flex items-center gap-1"><FilterIcon size={12}/> FILTER</h4>
                                     <p className="text-white/70">Unite APIのデータを基に「人気、不人気25匹ずつ」の環境データを収録。</p>
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white text-xs mb-1 flex items-center gap-1"><Users size={12}/> MULTI & SAFE</h4>
-                                    <p className="text-white/70">人数に合わせた最適なレーン配分に加え、無理な構成を避ける「事故軽減モード」を搭載。</p>
+                                    <h4 className="font-bold text-white text-xs mb-1 flex items-center gap-1"><Users size={12}/> MULTI & MODES人数に合わせた最適なレーン配分に加え、無理な構成を避ける人数に合わせた最適なレーン配分に加え、「構成保証モード」「大会メタモード」を搭載。</p>
+                                    <p className="text-white/70 text-[10px] mt-1">構成保証モード：各レーンに「サポタン＋スイクン」を必ず1匹、かつ1匹まで採用。</p>
+                                    <p className="text-white/70 text-[10px]">大会メタモード：PUACL 2025 Day1-4（全230試合）で使用回数12回以上（約5%ライン超）の41匹から選出。</p>
                                 </div>
                             </div>
                         </div>
@@ -1107,7 +1261,8 @@
             const [filterMode, setFilterMode] = useState('default');
             const [categoryMode, setCategoryMode] = useState('looks'); // Default to Looks
             const [playerCount, setPlayerCount] = useState(1);
-            const [isSafeMode, setIsSafeMode] = useState(false);
+            const [isCompGuaranteeMode, setIsCompGuaranteeMode] = useState(false);
+            const [isTournamentMetaMode, setIsTournamentMetaMode] = useState(false);
             const [phase, setPhase] = useState('setup');
             const [results, setResults] = useState([]);
             const [rotations, setRotations] = useState([0, 0, 0, 0, 0]);
@@ -1121,7 +1276,7 @@
                 return "MISMATCH";
             };
 
-            // 事故軽減ロジック: 設定(CONFIG_TANK_SUPPORT_EXCEPTIONS)を使用
+            // 構成保証ロジック: 設定(CONFIG_TANK_SUPPORT_EXCEPTIONS)を使用
             const isTankOrSupport = (p) => ['Defender', 'Supporter'].includes(p.role) || CONFIG_TANK_SUPPORT_EXCEPTIONS.includes(p.id);
 
             const getPool = () => {
@@ -1138,6 +1293,7 @@
                         ['Defender', 'Supporter'].includes(p.role) || CONFIG_TANK_SUPPORT_EXCEPTIONS.includes(p.id)
                     );
                 }
+                if (isTournamentMetaMode) pool = pool.filter(p => TOURNAMENT_META_SET.has(p.name));
                 return pool;
             };
 
@@ -1166,7 +1322,7 @@
                 } else if (playerCount === 3) {
                     const side = Math.random() < 0.5 ? '上レーン' : '下レーン';
                     selectedLanes = ['中央エリア', side, side];
-                    selectedLanes.sort(() => 0.5 - Math.random());
+                    selectedLanes = shuffleArray(selectedLanes);
                 } else {
                     let availableLanes = [...LANE_POOL_TEMPLATE];
                     for (let i = availableLanes.length - 1; i > 0; i--) {
@@ -1223,32 +1379,36 @@
                     const lane = playerCount === 1 ? ["上レーン", "中央エリア", "下レーン"][Math.floor(Math.random() * 3)] : selectedLanes[i];
                     
                     let finalCandidates = availableCandidates;
-                    if (isSafeMode && playerCount > 1) {
-                        const synergyCandidates = availableCandidates.filter(p => checkSynergy(p, lane) === 'MATCH');
-                        if (synergyCandidates.length > 0) finalCandidates = synergyCandidates;
+                    
+if (isCompGuaranteeMode && playerCount > 1) {
+    const synergyCandidates = availableCandidates.filter(p => checkSynergy(p, lane) === 'MATCH');
+    if (synergyCandidates.length > 0) finalCandidates = synergyCandidates;
 
-                        const totalInLane = selectedLanes.filter(l => l === lane).length;
-                        const currentResultsInLane = newResults.filter(r => r.lane === lane);
-                        const isLastSlotForLane = currentResultsInLane.length === totalInLane - 1;
-                        const hasTankRole = currentResultsInLane.some(r => isTankOrSupport(r.pokemon));
+    const totalInLane = selectedLanes.filter(l => l === lane).length;
+    const currentResultsInLane = newResults.filter(r => r.lane === lane);
+    const isLastSlotForLane = currentResultsInLane.length === totalInLane - 1;
+    const guaranteeCount = currentResultsInLane.filter(r => isTankOrSupport(r.pokemon)).length;
 
-                        if (isLastSlotForLane && !hasTankRole) {
-                            const tankCandidates = finalCandidates.filter(isTankOrSupport);
-                            if (tankCandidates.length > 0) finalCandidates = tankCandidates;
-                        }
-                    }
+    // 各レーンで「サポタン＋スイクン」を必ず1匹、かつ1匹まで
+    if (guaranteeCount >= 1) {
+        const nonGuaranteeCandidates = finalCandidates.filter(p => !isTankOrSupport(p));
+        if (nonGuaranteeCandidates.length > 0) finalCandidates = nonGuaranteeCandidates;
+    } else if (isLastSlotForLane) {
+        const guaranteeCandidates = finalCandidates.filter(isTankOrSupport);
+        if (guaranteeCandidates.length > 0) finalCandidates = guaranteeCandidates;
+    }
+}
 
-                    if (finalCandidates.length === 0) finalCandidates = candidates;
+if (finalCandidates.length === 0) finalCandidates = candidates;
 
                     let picked = null;
-                    let shuffled = [...finalCandidates].sort(() => 0.5 - Math.random());
+                    let shuffled = shuffleArray(finalCandidates);
                     picked = shuffled[0];
 
                     if (picked) usedPokemonIds.add(picked.id);
 
                     const synergy = picked ? checkSynergy(picked, lane) : 'MISMATCH';
-                    const others = isRandomMode ? [] : candidates.sort(() => 0.5 - Math.random());
-
+                    const others = isRandomMode ? [] : shuffleArray(candidates);
                     newResults.push({
                         playerIndex: i + 1,
                         pokemon: picked,
@@ -1276,7 +1436,8 @@
                     setTimeout(() => {
                         setResults(newResults);
                         setPhase('result');
-                        playResultSound(true);
+                        const shouldPlayMatchSound = playerCount === 1 ? (newResults[0] && newResults[0].synergy === 'MATCH') : true;
+                        playResultSound(shouldPlayMatchSound);
                     }, 800);
                 }, 3000);
             };
@@ -1286,7 +1447,7 @@
                 setResults([]);
             };
 
-            return { filterMode, setFilterMode, categoryMode, setCategoryMode, playerCount, setPlayerCount, isSafeMode, setIsSafeMode, phase, results, spin, reset, rotations, checkSynergy };
+            return { filterMode, setFilterMode, categoryMode, setCategoryMode, playerCount, setPlayerCount, isCompGuaranteeMode, setIsCompGuaranteeMode, isTournamentMetaMode, setIsTournamentMetaMode, phase, results, spin, reset, rotations, checkSynergy };
         };
 
         const ParticleBackground = () => (
@@ -1298,10 +1459,11 @@
         );
 
         const App = () => {
-            const { filterMode, setFilterMode, categoryMode, setCategoryMode, playerCount, setPlayerCount, isSafeMode, setIsSafeMode, phase, results, spin, reset, rotations, checkSynergy } = useRoulette();
+            const { filterMode, setFilterMode, categoryMode, setCategoryMode, playerCount, setPlayerCount, isCompGuaranteeMode, setIsCompGuaranteeMode, isTournamentMetaMode, setIsTournamentMetaMode, phase, results, spin, reset, rotations, checkSynergy } = useRoulette();
             const [currentView, setCurrentView] = useState('roulette');
 
             const handleViewDatabase = () => { window.scrollTo(0, 0); setCurrentView('database'); };
+            const handleViewTournamentMeta = () => { window.scrollTo(0, 0); setCurrentView('tournament_meta'); };
             const handleBackToRoulette = () => { window.scrollTo(0, 0); setCurrentView('roulette'); };
 
             // 初期表示(マウント)されるまでメインコンテンツを表示しない (FOUC防止)
@@ -1320,12 +1482,17 @@
                             <DatabaseView onBack={handleBackToRoulette} />
                         )}
 
+
+                        {currentView === 'tournament_meta' && (
+                            <TournamentMetaView onBack={handleBackToRoulette} />
+                        )}
+
                         {currentView === 'roulette' && (
                             <>
                                 {phase !== 'result' && (
                                     <div className={`w-full flex flex-col items-center duration-500 ${phase === 'setup' ? 'animate-in fade-in slide-in-from-bottom-4' : ''}`}>
                                         <div className={`transition-opacity duration-300 w-full ${phase !== 'setup' ? 'opacity-0 pointer-events-none h-0 overflow-hidden' : 'opacity-100'}`}>
-                                            <PlayerCountSelector playerCount={playerCount} setPlayerCount={setPlayerCount} isSafeMode={isSafeMode} setIsSafeMode={setIsSafeMode} />
+                                            <PlayerCountSelector playerCount={playerCount} setPlayerCount={setPlayerCount} isCompGuaranteeMode={isCompGuaranteeMode} setIsCompGuaranteeMode={setIsCompGuaranteeMode} isTournamentMetaMode={isTournamentMetaMode} setIsTournamentMetaMode={setIsTournamentMetaMode} />
                                             <CategorySelector selected={categoryMode} onSelect={setCategoryMode} />
                                         </div>
 
@@ -1353,7 +1520,7 @@
                                 {phase === 'result' && results.length === 1 && <ResultCard result={results[0]} onReset={reset} />}
                                 {phase === 'result' && results.length > 1 && <MultiResultView results={results} onReset={reset} checkSynergy={checkSynergy} />}
                                 
-                                <Footer onOpenDatabase={handleViewDatabase} />
+                                <Footer onOpenDatabase={handleViewDatabase} onOpenTournamentMeta={handleViewTournamentMeta} />
                             </>
                         )}
                     </main>
