@@ -334,6 +334,17 @@ const Trophy = (p) => <IconBase {...p}>
             return { startSpinSound, slowdownSpinSound, playResultSound };
         };
 
+        // 乱択シャッフル: sort(Math.random)は偏りが出るためFisher–Yatesを使用（入力配列は破壊しない）
+        const shuffleArray = (arr) => {
+            const a = Array.isArray(arr) ? [...arr] : [];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        };
+
+
         // --- Data Definitions (Ver 24.0) ---
         // dbIndex: POKEMON_DBのcats配列におけるインデックス (0:Elements, 1:Gens, 2:Styles, 3:Growth(廃止), 4:Looks)
         const CATEGORY_MODES = [
@@ -925,7 +936,7 @@ const SecondaryCandidates = ({ others, onSelect, categoryLabel, currentSelection
             const laneColorClass = getLaneColor(result.lane);
 
             const shareTwitter = () => {
-                const shuffledTags = [...displayPokemon.tags].sort(() => 0.5 - Math.random()).slice(0, 3);
+                const shuffledTags = shuffleArray(displayPokemon.tags).slice(0, 3);
                 const tagsText = shuffledTags.join(' ');
                 const text = `今日のポケモンは【${displayPokemon.name}】！\nレーン: ${result.lane}\nテーマ: ${result.categoryLabel}\n\n${tagsText}\n\n運命のルーレット結果 👉 #PU_TR #PokemonUNITE\n勝敗は運命次第！？`;
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
@@ -1312,7 +1323,7 @@ const Footer = ({ onOpenDatabase, onOpenTournamentMeta }) => (
                 } else if (playerCount === 3) {
                     const side = Math.random() < 0.5 ? '上レーン' : '下レーン';
                     selectedLanes = ['中央エリア', side, side];
-                    selectedLanes.sort(() => 0.5 - Math.random());
+                    selectedLanes = shuffleArray(selectedLanes);
                 } else {
                     let availableLanes = [...LANE_POOL_TEMPLATE];
                     for (let i = availableLanes.length - 1; i > 0; i--) {
@@ -1392,13 +1403,13 @@ if (isCompGuaranteeMode && playerCount > 1) {
 if (finalCandidates.length === 0) finalCandidates = candidates;
 
                     let picked = null;
-                    let shuffled = [...finalCandidates].sort(() => 0.5 - Math.random());
+                    let shuffled = shuffleArray(finalCandidates);
                     picked = shuffled[0];
 
                     if (picked) usedPokemonIds.add(picked.id);
 
                     const synergy = picked ? checkSynergy(picked, lane) : 'MISMATCH';
-                    const others = isRandomMode ? [] : candidates.sort(() => 0.5 - Math.random());
+                    const others = isRandomMode ? [] : shuffleArray(candidates);
 
                     newResults.push({
                         playerIndex: i + 1,
@@ -1427,7 +1438,11 @@ if (finalCandidates.length === 0) finalCandidates = candidates;
                     setTimeout(() => {
                         setResults(newResults);
                         setPhase('result');
-                        playResultSound(true);
+                        const shouldPlayMatchSound =
+                            playerCount === 1
+                                ? (newResults[0] && newResults[0].synergy === 'MATCH')
+                                : true;
+                        playResultSound(shouldPlayMatchSound);
                     }, 800);
                 }, 3000);
             };
