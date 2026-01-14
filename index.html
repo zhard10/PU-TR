@@ -844,13 +844,13 @@ const PlayerCountSelector = ({
             ))}
         </div>
 
-        <div className="flex flex-col items-center gap-2 mt-2 animate-in fade-in slide-in-from-top-1">
+        <div className="flex flex-row flex-wrap items-center justify-center gap-4 mt-2 animate-in fade-in slide-in-from-top-1">
             {playerCount > 1 && (
                 <label className="flex items-center cursor-pointer relative">
                     <input type="checkbox" checked={isCompGuaranteeMode} onChange={(e) => setIsCompGuaranteeMode(e.target.checked)} className="sr-only peer" />
-                    <div className="w-8 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-500"></div>
-                    <span className="ml-2 text-[10px] font-bold text-white flex items-center gap-1 font-sans">
-                        <ShieldCheck size={12} className={isCompGuaranteeMode ? "text-green-400" : "text-gray-400"}/> 
+                    <div className="relative w-10 h-5 bg-gray-700 rounded-full transition-colors peer-focus:outline-none peer-checked:bg-green-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                    <span className="ml-2 text-xs font-bold text-white flex items-center gap-1 font-sans">
+                        <ShieldCheck size={14} className={isCompGuaranteeMode ? "text-green-400" : "text-gray-400"}/> 
                         構成保証モード
                     </span>
                 </label>
@@ -858,9 +858,9 @@ const PlayerCountSelector = ({
 
             <label className="flex items-center cursor-pointer relative">
                 <input type="checkbox" checked={isTournamentMetaMode} onChange={(e) => setIsTournamentMetaMode(e.target.checked)} className="sr-only peer" />
-                <div className="w-8 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-500"></div>
-                <span className="ml-2 text-[10px] font-bold text-white flex items-center gap-1 font-sans">
-                    <Trophy size={12} className={isTournamentMetaMode ? "text-neon-yellow" : "text-gray-400"}/> 
+                <div className="relative w-10 h-5 bg-gray-700 rounded-full transition-colors peer-focus:outline-none peer-checked:bg-green-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5"></div>
+                <span className="ml-2 text-xs font-bold text-white flex items-center gap-1 font-sans">
+                    <Trophy size={14} className={isTournamentMetaMode ? "text-neon-yellow" : "text-gray-400"}/> 
                     大会メタモード
                 </span>
             </label>
@@ -1244,20 +1244,19 @@ const Footer = ({ onOpenDatabase, onOpenTournamentMeta }) => (
                         <div>
                             <h4 className="font-bold text-white text-xs mb-1 flex items-center gap-1"><FilterIcon size={12}/> FILTER</h4>
                             <p className="text-white/70 text-[10px]">ソロモードにおけるキャリー、サポタンフィルタに加え Unite APIのデータを基に「人気、不人気25匹ずつ」の環境データを収録。</p>
-                        </div>
-
-                        <div>
-                            <h4 className="font-bold text-white text-xs mb-1 flex items-center gap-1"><ShieldCheck size={12}/> SYSTEM NOTE</h4>
-                            <p className="text-white/70 text-[10px]">「フィルタ × テーマ × 事故軽減」等で組み合わせが存在しない場合でも大丈夫。システムが自動的に条件を緩和し、最適なポケモンを選出します。</p>
-                        </div>
-
-                        <div>
+                        </div><div>
                             <h4 className="font-bold text-white text-xs mb-1 flex items-center gap-1"><Users size={12}/> MULTI & MODES</h4>
                             <p className="text-white/70 text-[10px]">人数に合わせた最適なレーン配分に加え、無理な構成を避ける「構成保証モード」 環境のトップメタを優先して選出する「大会メタモード」を搭載。</p>
                             <p className="text-white/60 text-[10px] mt-1 leading-relaxed">
                                 構成保証モード：適正レーン選出に加え、各レーンに「サポート,タンク」を1匹採用。<br/>
-                                大会メタモード：PUACL 2025 Day1-4（全230試合）で使用回数12回以上（約5%ライン超）の41匹から選出。
+                                大会メタモード：PUACL 2025 Day1-4で使用回数12回以上の41匹から選出。
                             </p>
+                        </div>
+
+
+                        <div>
+                            <h4 className="font-bold text-white text-xs mb-1 flex items-center gap-1"><ShieldCheck size={12}/> SYSTEM NOTE</h4>
+                            <p className="text-white/70 text-[10px]">「フィルタ × テーマ × 事故軽減」等で組み合わせが存在しない場合でも大丈夫。システムが自動的に条件を緩和し、最適なポケモンを選出します。</p>
                         </div>
 
                         <div>
