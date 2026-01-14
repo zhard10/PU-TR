@@ -838,7 +838,7 @@ const PlayerCountSelector = ({
         </h3>
         <div className="grid grid-cols-4 gap-2 md:gap-4 mb-2">
             {PLAYER_COUNTS.map((p) => (
-                <button key={p.count} onClick={() => setPlayerCount(p.count)} className={`py-2 md:py-4 rounded-lg font-jp font-bold text-xs md:text-base transition-all border ${playerCount === p.count ? 'bg-neon-blue text-white border-white shadow-[0_0_10px_rgba(96,165,250,0.6)]' : 'bg-black/30 text-white/50 border-white/10 hover:bg-white/10'}`}>
+                <button key={p.count} onClick={() => { setPlayerCount(p.count); if (p.count > 1) setIsCompGuaranteeMode(true); else setIsCompGuaranteeMode(false); }} className={`py-2 md:py-4 rounded-lg font-jp font-bold text-xs md:text-base transition-all border ${playerCount === p.count ? 'bg-neon-blue text-white border-white shadow-[0_0_10px_rgba(96,165,250,0.6)]' : 'bg-black/30 text-white/50 border-white/10 hover:bg-white/10'}`}>
                     {p.label}
                 </button>
             ))}
@@ -927,7 +927,14 @@ const SecondaryCandidates = ({ others, onSelect, categoryLabel, currentSelection
                 const shuffledTags = [...displayPokemon.tags].sort(() => 0.5 - Math.random()).slice(0, 2);
                 const tagsText = shuffledTags.join(' ');
                 const laneText = (result && result.lane) ? `｜${result.lane}` : '';
-                const text = `UNITE Roulette結果：${displayPokemon.name}${laneText}\n${tagsText}\n#UNITERoulette #PokemonUNITE\n${url}`;
+                const typeLaneText = displayPokemon.type ? `${displayPokemon.type}タイプ${laneText}` : ((result && result.lane) ? result.lane : '');
+                const text = `運命のルーレット結果
+今日のポケモンは【${displayPokemon.name}】！
+${typeLaneText}
+
+${tagsText}
+#UNITERoulette #PokemonUNITE
+${url}`;
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
             };
 
@@ -1062,11 +1069,11 @@ const SecondaryCandidates = ({ others, onSelect, categoryLabel, currentSelection
 
             const shareTwitter = () => {
                 const url = 'https://www.unite-roulette.site';
-                const squadText = displayResults.map(r => {
-                    const lane = r.lane ? `(${r.lane})` : '';
-                    return `P${r.displayIndex}:${r.pokemon.name}${lane}`;
-                }).join('\n');
-                const text = `UNITE Rouletteマルチ結果\n${squadText}\n#UNITERoulette #PokemonUNITE\n${url}`;
+                const names = displayResults.map(r => r.pokemon.name).join('/');
+                const allTags = [...new Set(displayResults.flatMap(r => (r.pokemon.tags || [])))];
+                const shuffledTags = allTags.sort(() => 0.5 - Math.random()).slice(0, 2);
+                const tagsText = shuffledTags.join(' ');
+                const text = `運命のルーレット結果\n今日のポケモンは【${names}】\n${tagsText}\n#UNITERoulette #PokemonUNITE\n${url}`;
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
             };
             
@@ -1285,7 +1292,7 @@ const Footer = ({ onOpenDatabase, onOpenTournamentMeta }) => (
         // --- Logic Hooks ---
         const useRoulette = () => {
             const [filterMode, setFilterMode] = useState('default');
-            const [categoryMode, setCategoryMode] = useState('looks'); // Default to Looks
+            const [categoryMode, setCategoryMode] = useState('elements'); // Default to Looks
             const [playerCount, setPlayerCount] = useState(1);
             const [isCompGuaranteeMode, setIsCompGuaranteeMode] = useState(false);
             const [isTournamentMetaMode, setIsTournamentMetaMode] = useState(false);
