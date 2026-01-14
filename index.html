@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PU-TR: Tactical Roulette Ver 24.0</title>
+    <title>UNITE Roulette: Tactical Roulette Ver 24.0</title>
 <!-- React & ReactDOM -->
     <script onerror="window.__boot && window.__boot.libError('React', 'https://unpkg.com/react@18/umd/react.development.js')" crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script onerror="window.__boot && window.__boot.libError('ReactDOM', 'https://unpkg.com/react-dom@18/umd/react-dom.development.js')" crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -475,10 +475,10 @@ const Trophy = (p) => <IconBase {...p}>
             <header className="relative z-10 w-full max-w-md md:max-w-3xl mx-auto pt-6 md:pt-12 pb-2 px-4 flex flex-col items-center text-center">
                 <div className="flex items-baseline justify-center gap-2 flex-wrap w-full">
                     <h1 className="text-3xl md:text-5xl font-jp font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-neon-yellow to-white drop-shadow-lg tracking-tight leading-none mb-1">
-                        PU-TR
+                        UNITE Roulette
                     </h1>
                     <span className="text-xs md:text-base font-bold text-white/90 tracking-wide text-glow mb-2 font-jp">
-                        Pokemon UNITE Tactical Roulette
+                        &nbsp;
                     </span>
                 </div>
                 <p className="text-xs md:text-sm text-cyan-200 mt-1 font-jp opacity-100 font-bold tracking-wider">
@@ -923,9 +923,11 @@ const SecondaryCandidates = ({ others, onSelect, categoryLabel, currentSelection
             const laneColorClass = getLaneColor(result.lane);
 
             const shareTwitter = () => {
-                const shuffledTags = [...displayPokemon.tags].sort(() => 0.5 - Math.random()).slice(0, 3);
+                const url = 'https://www.unite-roulette.site';
+                const shuffledTags = [...displayPokemon.tags].sort(() => 0.5 - Math.random()).slice(0, 2);
                 const tagsText = shuffledTags.join(' ');
-                const text = `今日のポケモンは【${displayPokemon.name}】！\nレーン: ${result.lane}\nテーマ: ${result.categoryLabel}\n\n${tagsText}\n\n運命のルーレット結果 👉 #PU_TR #PokemonUNITE\n勝敗は運命次第！？`;
+                const laneText = (result && result.lane) ? `｜${result.lane}` : '';
+                const text = `UNITE Roulette結果：${displayPokemon.name}${laneText}\n${tagsText}\n#UNITERoulette #PokemonUNITE\n${url}`;
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
             };
 
@@ -985,7 +987,7 @@ const SecondaryCandidates = ({ others, onSelect, categoryLabel, currentSelection
 
                     <div className="mt-4 flex flex-col gap-2 items-center w-full max-w-2xl mx-auto">
                         <p className="text-[10px] text-white/50 flex items-center gap-1 font-sans"><Camera size={12} /> 端末機能でキャプチャしてシェアしてね！</p>
-                        <button onClick={shareTwitter} className="w-full bg-[#1DA1F2] text-white font-bold py-2.5 md:py-4 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:scale-105 transition-transform text-xs md:text-base font-jp"><Share2 size={16} /> Xでポストする</button>
+                        <button onClick={shareTwitter} className="w-full bg-[#1DA1F2] text-white font-bold py-2.5 md:py-4 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:scale-105 transition-transform text-xs md:text-base font-jp"><Share2 size={16} /> Xでシェアする</button>
                     </div>
                     <div className="mt-3 w-full max-w-2xl mx-auto">
                         <button onClick={onReset} className="w-full bg-white/10 text-white/70 font-bold py-2.5 md:py-4 px-4 rounded-xl border border-white/20 flex items-center justify-center gap-2 hover:bg-white/20 transition-all text-xs md:text-base font-sans"><RefreshCw size={14} /> もう一度回す</button>
@@ -1059,12 +1061,12 @@ const SecondaryCandidates = ({ others, onSelect, categoryLabel, currentSelection
             };
 
             const shareTwitter = () => {
+                const url = 'https://www.unite-roulette.site';
                 const squadText = displayResults.map(r => {
-                    const randomTag = r.pokemon.tags[Math.floor(Math.random() * r.pokemon.tags.length)];
-                    return `P${r.displayIndex}: ${r.pokemon.name} ${randomTag}`;
+                    const lane = r.lane ? `(${r.lane})` : '';
+                    return `P${r.displayIndex}:${r.pokemon.name}${lane}`;
                 }).join('\n');
-                
-                const text = `PU-TR Multi-Squad Result!\n今回のチーム構成はこちら！👇\n\n${squadText}\n\n#PU_TR #PokemonUNITE #ポケモンユナイト\n運命のチームで勝利を掴め！`;
+                const text = `UNITE Rouletteマルチ結果\n${squadText}\n#UNITERoulette #PokemonUNITE\n${url}`;
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
             };
             
@@ -1092,7 +1094,7 @@ const SecondaryCandidates = ({ others, onSelect, categoryLabel, currentSelection
                     </div>
                     <div className="mt-4 flex flex-col gap-2 items-center">
                         <p className="text-[10px] text-white/50 flex items-center gap-1 font-sans"><Camera size={12} /> 結果をキャプチャしてシェア！</p>
-                        <button onClick={shareTwitter} className="w-full bg-[#1DA1F2] text-white font-bold py-3 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:scale-105 transition-transform text-sm font-jp"><Share2 size={18} /> 結果をポスト</button>
+                        <button onClick={shareTwitter} className="w-full bg-[#1DA1F2] text-white font-bold py-3 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:scale-105 transition-transform text-sm font-jp"><Share2 size={18} /> Xでシェアする</button>
                         <button onClick={onReset} className="w-full bg-white/10 text-white/70 font-bold py-3 px-4 rounded-xl border border-white/20 flex items-center justify-center gap-2 hover:bg-white/20 transition-all text-sm font-sans"><RefreshCw size={16} /> もう一度回す</button>
                     </div>
                 </div>
@@ -1168,10 +1170,10 @@ const Footer = ({ onOpenDatabase, onOpenTournamentMeta }) => (
         <div className="max-w-4xl md:max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mb-8">
                 <div className="space-y-3">
-                    <h3 className="font-display font-bold text-neon-pink text-lg tracking-wide border-l-4 border-neon-pink pl-3">Pokémon UNITE Tactical Roulette</h3>
+                    <h3 className="font-display font-bold text-neon-pink text-lg tracking-wide border-l-4 border-neon-pink pl-3">UNITE Roulette</h3>
                     <h4 className="font-bold text-white text-xs">毎日のユナイトに、予測不能なワクワクを。</h4>
                     <p className="text-white/80 leading-relaxed text-left break-words-anywhere">
-                        PU-TRは、ピックやレーン選択に「偶然」の要素を取り入れることで、日々のプレイにおけるマンネリを解消し、新しい楽しみ方を発見するための戦術ルーレットです。「意外な組み合わせが強かった」「使っていなかったポケモンの魅力に気づいた」。そんな小さな発見が、ポケモンユナイトをより長く、深く楽しむきっかけになれば幸いです。
+                        UNITE Rouletteは、ポケモンユナイトのピックやレーン選択に「偶然」の要素を取り入れることで、日々のプレイにおけるマンネリを解消し、新しい楽しみ方を発見するための戦術ルーレットです。「意外な組み合わせが強かった」「使っていなかったポケモンの魅力に気づいた」。そんな小さな発見が、ポケモンユナイトをより長く、深く楽しむきっかけになれば幸いです。
                     </p>
                     <p className="text-[9px] text-white/60 bg-white/5 p-2 rounded border border-white/10 text-left">
                         ※ランクマッチ等で遊ぶ際は、味方チームへの配慮や合意形成をお忘れなく。<br/>
@@ -1270,7 +1272,11 @@ const Footer = ({ onOpenDatabase, onOpenTournamentMeta }) => (
             </div>
 
             <div className="text-center text-white/40 text-[10px] border-t border-white/10 pt-6">
-                PU-TR / Pokémon UNITE Tactical Roulette
+                UNITE Roulette
+            </div>
+            <div className="text-center text-white/35 text-[10px] mt-3 leading-relaxed">
+                本サイトは非公式のファンメイドプロジェクトであり、任天堂・株式会社ポケモン・TiMi Studio Group・Tencent とは関係ありません。<br />
+                「Pokémon」「Pokémon UNITE」等の商標は各権利者に帰属します。
             </div>
         </div>
     </footer>
