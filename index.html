@@ -1378,7 +1378,19 @@ const SecondaryCandidates = ({ others, onSelect, categoryLabel, currentSelection
             };
             const laneColorClass = getLaneColor(result.lane);
 
-            const shareTwitter = () => {
+const shareTwitter = () => {
+                // GA4: Xシェアボタン押下をカウント（ソロ）
+                if (typeof window.gtag === 'function') {
+                    window.gtag('event', 'share', {
+                        content_type: 'roulette_result',
+                        item_id: displayPokemon?.name || 'unknown',
+                        share_target: 'x',
+                        method: 'x',
+                        mode: 'single'
+
+                    });
+                }
+
                 const url = 'https://unite-roulette.site/';
                 const shuffledTags = [...displayPokemon.tags].sort(() => 0.5 - Math.random()).slice(0, 2);
                 const tagsText = shuffledTags.join(' ');
@@ -1523,7 +1535,19 @@ ${url}`;
                 setDisplayResults(newDisplayResults);
             };
 
-            const shareTwitter = () => {
+const shareTwitter = () => {
+                // GA4: Xシェアボタン押下をカウント（マルチ）
+                if (typeof window.gtag === 'function') {
+                    const namesForGa = displayResults.map(r => r.pokemon.name).join('/');
+                    window.gtag('event', 'share', {
+                        content_type: 'roulette_result',
+                        item_id: namesForGa || 'unknown',
+                        share_target: 'x',
+                        method: 'x',
+                        mode: 'multi'
+                    });
+                }
+
                 const url = 'https://unite-roulette.site/';
                 const names = displayResults.map(r => r.pokemon.name).join('/');
                 const allTags = [...new Set(displayResults.flatMap(r => (r.pokemon.tags || [])))];
@@ -1532,6 +1556,7 @@ ${url}`;
                 const text = `運命のルーレット結果\n今日のポケモンは【${names}】\n${tagsText}\n#UNITERoulette #PokemonUNITE\n${url}`;
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
             };
+
             
             return (
                 <div className="relative z-20 w-full max-w-md md:max-w-3xl mx-auto p-4 animate-in zoom-in-95 duration-500">
