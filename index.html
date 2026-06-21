@@ -29,6 +29,17 @@
   gtag('config', 'G-CHKNB5BK2H');
 </script>
 
+
+<script>
+  window.__uniteBootDone = false;
+  window.__uniteBootErrors = [];
+  window.__boot = {
+    libError: function(name, url) {
+      window.__uniteBootErrors.push({ name: name, url: url, time: Date.now() });
+    }
+  };
+</script>
+
 <!-- React & ReactDOM -->
     <script onerror="window.__boot && window.__boot.libError('React', 'https://unpkg.com/react@18/umd/react.development.js')" crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script onerror="window.__boot && window.__boot.libError('ReactDOM', 'https://unpkg.com/react-dom@18/umd/react-dom.development.js')" crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -153,7 +164,26 @@
     </style>
 </head>
 <body>
-    <div id="root"><div id="boot-fallback" style="min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:96px 20px 24px;color:white;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;text-align:center;"><div style="max-width:360px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:18px 20px;backdrop-filter:blur(10px);"><div style="font-weight:800;font-size:18px;margin-bottom:6px;">UNITE Roulette</div><div style="font-size:13px;opacity:.85;line-height:1.6;">読み込み中です。表示されない場合は再読み込みしてください。</div></div></div></div>
+    <div id="root"><div id="boot-preflight" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:white;font-family:sans-serif;text-align:center;"><div style="max-width:420px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:20px;backdrop-filter:blur(10px);"><div style="font-weight:800;font-size:18px;margin-bottom:8px;">UNITE Roulette 起動中...</div><div style="font-size:13px;line-height:1.7;opacity:.85;">画面が切り替わらない場合は、JavaScript または外部ライブラリの読み込みで止まっています。</div></div></div></div>
+<script>
+(function(){
+  function esc(v){ return String(v || '').replace(/[&<>]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+  window.__uniteShowBootFail = function(message, detail){
+    var root = document.getElementById('root');
+    if (!root || window.__uniteBootDone) return;
+    root.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:white;font-family:sans-serif;text-align:center;"><div style="max-width:420px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:20px;backdrop-filter:blur(10px);"><div style="font-weight:800;font-size:18px;margin-bottom:8px;">UNITE Roulette の起動に失敗しました</div><div style="font-size:13px;line-height:1.7;opacity:.9;">' + esc(message) + '</div>' + (detail ? '<pre style="margin-top:12px;white-space:pre-wrap;text-align:left;font-size:11px;opacity:.78;background:rgba(0,0,0,.25);padding:10px;border-radius:10px;">' + esc(detail) + '</pre>' : '') + '</div></div>';
+  };
+  setTimeout(function(){
+    if (window.__uniteBootDone) return;
+    var errs = window.__uniteBootErrors || [];
+    if (errs.length) {
+      window.__uniteShowBootFail('React / ReactDOM / Tailwind の読み込みに失敗しました。CDNブロック、通信状態、キャッシュを確認してください。', JSON.stringify(errs, null, 2));
+    } else {
+      window.__uniteShowBootFail('JavaScriptの初期化が完了しませんでした。古いHTMLキャッシュ、構文エラー、またはメインスクリプト未実行の可能性があります。');
+    }
+  }, 4500);
+})();
+</script>
 <script>
 
 (function(){
@@ -163,10 +193,11 @@
     rootEl.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:white;font-family:sans-serif;text-align:center;background:linear-gradient(135deg,#4c1d95 0%,#7c3aed 50%,#06b6d4 100%);"><div style="max-width:420px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:20px;backdrop-filter:blur(10px);"><div style="font-weight:800;font-size:18px;margin-bottom:8px;">UNITE Roulette の起動に失敗しました</div><div style="font-size:13px;line-height:1.7;opacity:.9;">' + message + '</div>' + (detail ? '<pre style="margin-top:12px;white-space:pre-wrap;text-align:left;font-size:11px;opacity:.75;background:rgba(0,0,0,.25);padding:10px;border-radius:10px;">' + String(detail).replace(/[&<>]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}) + '</pre>' : '') + '</div></div>';
   }
   window.addEventListener('error', function(e){
-    if (rootEl && !rootEl.dataset.appStarted) showBootError('初期化中にエラーが発生しました。', e.message || e.error || 'unknown error');
+    if (rootEl && rootEl.children.length === 0) showBootError('初期化中にエラーが発生しました。', e.message || e.error || 'unknown error');
   });
   try {
     if (!window.React || !window.ReactDOM) {
+      window.__uniteBootDone = true;
       showBootError('Reactの読み込みに失敗しました。通信環境、CDNブロック、広告ブロッカー等を確認してください。');
       return;
     }
@@ -2110,14 +2141,14 @@ const App = () => {
                 phase === 'result' && results.length > 1 && React.createElement(MultiResultView, { results: results, onReset: reset, checkSynergy: checkSynergy }),
                 React.createElement(Footer, { onOpenDatabase: handleViewDatabase, onOpenTournamentMeta: handleViewTournamentMeta }))))));
 };
-const rootNode = document.getElementById('root');
-const root = ReactDOM.createRoot(rootNode);
+const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(App, null));
-if (rootNode) rootNode.dataset.appStarted = '1';
+window.__uniteBootDone = true;
 
 
   } catch (e) {
     console.error(e);
+    window.__uniteBootDone = true;
     showBootError('初期化中にエラーが発生しました。', e && (e.stack || e.message || e));
   }
 })();
