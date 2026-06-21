@@ -153,13 +153,8 @@
     </style>
 </head>
 <body>
-    <div id="root"></div>
-<script type="text/babel">
-        const { useState, useEffect, useMemo, useRef, useCallback } = React;
-
-        // --- Config & Data Injection (Ver 24.0) ---
-        // 構成保証ロジック用設定: ロール保証の対象となる例外ポケモンID (例: スイクン)
-    <script>
+    <div id="root"><div id="boot-fallback" style="min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:96px 20px 24px;color:white;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;text-align:center;"><div style="max-width:360px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:18px 20px;backdrop-filter:blur(10px);"><div style="font-weight:800;font-size:18px;margin-bottom:6px;">UNITE Roulette</div><div style="font-size:13px;opacity:.85;line-height:1.6;">読み込み中です。表示されない場合は再読み込みしてください。</div></div></div></div>
+<script>
 
 (function(){
   var rootEl = document.getElementById('root');
@@ -168,7 +163,7 @@
     rootEl.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:white;font-family:sans-serif;text-align:center;background:linear-gradient(135deg,#4c1d95 0%,#7c3aed 50%,#06b6d4 100%);"><div style="max-width:420px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:20px;backdrop-filter:blur(10px);"><div style="font-weight:800;font-size:18px;margin-bottom:8px;">UNITE Roulette の起動に失敗しました</div><div style="font-size:13px;line-height:1.7;opacity:.9;">' + message + '</div>' + (detail ? '<pre style="margin-top:12px;white-space:pre-wrap;text-align:left;font-size:11px;opacity:.75;background:rgba(0,0,0,.25);padding:10px;border-radius:10px;">' + String(detail).replace(/[&<>]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}) + '</pre>' : '') + '</div></div>';
   }
   window.addEventListener('error', function(e){
-    if (rootEl && rootEl.children.length === 0) showBootError('初期化中にエラーが発生しました。', e.message || e.error || 'unknown error');
+    if (rootEl && !rootEl.dataset.appStarted) showBootError('初期化中にエラーが発生しました。', e.message || e.error || 'unknown error');
   });
   try {
     if (!window.React || !window.ReactDOM) {
@@ -2115,8 +2110,10 @@ const App = () => {
                 phase === 'result' && results.length > 1 && React.createElement(MultiResultView, { results: results, onReset: reset, checkSynergy: checkSynergy }),
                 React.createElement(Footer, { onOpenDatabase: handleViewDatabase, onOpenTournamentMeta: handleViewTournamentMeta }))))));
 };
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const rootNode = document.getElementById('root');
+const root = ReactDOM.createRoot(rootNode);
 root.render(React.createElement(App, null));
+if (rootNode) rootNode.dataset.appStarted = '1';
 
 
   } catch (e) {
