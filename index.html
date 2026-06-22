@@ -1795,6 +1795,9 @@ ${url}`;
                             React.createElement("div", { className: "bg-black/30 rounded-lg px-2 py-1 text-white/80 truncate" }, result.playerName || `P${result.playerIndex || 1}`),
                             React.createElement("div", { className: "bg-neon-pink/20 rounded-lg px-2 py-1 text-neon-pink truncate" }, displayPokemon.name),
                             React.createElement("div", { className: "bg-neon-cyan/20 rounded-lg px-2 py-1 text-neon-cyan truncate" }, result.lane)),
+                        result.isFallback && React.createElement("div", { className: "w-full mb-2 rounded-lg border border-neon-yellow/40 bg-neon-yellow/15 px-2 py-1 text-[10px] md:text-xs font-bold text-neon-yellow font-jp" },
+                            "補完あり: ",
+                            (result.fallbackNotes || []).join(' / ')),
                         React.createElement("h2", { className: "text-xl md:text-3xl font-jp font-bold text-white mb-2" }, displayPokemon.name),
                         React.createElement("div", { className: "w-full space-y-1 mb-1" }, displayTags.map((tag, idx) => (React.createElement("div", { key: idx, className: `rounded-md py-0.5 px-2 text-[10px] md:text-sm font-sans border ${isMatch ? 'bg-white/10 text-white/90 border-white/10' : 'bg-red-900/30 text-red-100 border-red-500/30'}` }, tag)))))),
                 React.createElement(SecondaryCandidates, { others: others, onSelect: setDisplayPokemon, categoryLabel: categoryLabel, currentSelection: displayPokemon, allSelections: [{ pokemon: displayPokemon }] }))),
@@ -1846,7 +1849,9 @@ const ResultCardMini = ({ res, idx, onClick, isSelected }) => {
         React.createElement("div", { className: "w-12 h-12 md:w-20 md:h-20 flex-shrink-0 relative" },
             React.createElement("img", { src: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${res.pokemon.dexId}.png`, className: "w-full h-full object-contain relative z-10" })),
         React.createElement("div", { className: "flex-grow min-w-0 flex flex-col justify-center pt-1" },
-            React.createElement("div", { className: "text-[10px] md:text-xs font-bold text-white/60 font-jp truncate" }, formatLabelMini(res.categoryLabel)),
+            React.createElement("div", { className: "text-[10px] md:text-xs font-bold text-white/60 font-jp truncate" },
+                formatLabelMini(res.categoryLabel),
+                res.isFallback && React.createElement("span", { className: "ml-1 text-[9px] text-neon-yellow font-bold" }, "補完")),
             React.createElement("div", { className: "flex items-center justify-between gap-2" },
                 React.createElement("div", { className: "text-sm md:text-lg font-black text-white truncate leading-tight font-jp" }, res.pokemon.name),
                 React.createElement("div", { className: "flex flex-col items-end" },
@@ -2062,6 +2067,15 @@ const useRoulette = (rouletteProfiles = []) => {
     };
     // 構成保証ロジック: 設定(CONFIG_TANK_SUPPORT_EXCEPTIONS)を使用
     const isTankOrSupport = (p) => ['Defender', 'Supporter'].includes(p.role) || CONFIG_TANK_SUPPORT_EXCEPTIONS.includes(p.id);
+    const isCarryRole = (p) => p && ['Attacker', 'Speedster', 'All-Rounder'].includes(p.role) && !isTankOrSupport(p);
+    const shuffleArray = (arr) => {
+        const copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+    };
     const activeRouletteProfiles = useMemo(() => (Array.isArray(rouletteProfiles) ? rouletteProfiles : []).filter(p => p && p.enabled !== false).slice(0, 5), [rouletteProfiles]);
     const isRosterMode = rouletteMode === 'roster';
     const effectivePlayerCount = isRosterMode ? Math.max(1, activeRouletteProfiles.length || 1) : playerCount;
@@ -2081,16 +2095,18 @@ const useRoulette = (rouletteProfiles = []) => {
         }
         return pool;
     };
-    const getPoolForProfile = (profileConfig) => {
-        let pool = getBasePool();
+    const getPoolForProfile = (profileConfig, options = {}) => {
+        let pool = options.ignoreFilter ? POKEMON_DB : getBasePool();
         const ownedSet = new Set(uniqueIds(profileConfig && profileConfig.ownedPokemonIds));
         const blackSet = new Set(uniqueIds(profileConfig && profileConfig.blacklistedPokemonIds));
         const mode = (profileConfig && profileConfig.poolMode) || 'all';
-        if (mode === 'roster')
-            pool = pool.filter(p => ownedSet.has(p.id));
-        else if (mode === 'not_roster')
-            pool = pool.filter(p => !ownedSet.has(p.id));
-        if (blackSet.size)
+        if (!options.ignoreRoster) {
+            if (mode === 'roster')
+                pool = pool.filter(p => ownedSet.has(p.id));
+            else if (mode === 'not_roster')
+                pool = pool.filter(p => !ownedSet.has(p.id));
+        }
+        if (!options.ignoreBlacklist && blackSet.size)
             pool = pool.filter(p => !blackSet.has(p.id));
         return pool;
     };
@@ -2102,25 +2118,89 @@ const useRoulette = (rouletteProfiles = []) => {
         configs.forEach(config => getPoolForProfile(config).forEach(p => map.set(p.id, p)));
         return [...map.values()];
     };
+    const canFillRole = (config, lane, role, strictLane = true) => {
+        const pool = getPoolForProfile(config);
+        const lanePool = strictLane ? pool.filter(p => checkSynergy(p, lane) === 'MATCH') : pool;
+        if (role === 'tank_sup')
+            return lanePool.some(isTankOrSupport);
+        if (role === 'carry')
+            return lanePool.some(isCarryRole);
+        return lanePool.length > 0;
+    };
     const makeRosterRolePlan = (configs, lanes) => {
         const plan = Array(configs.length).fill('free');
-        if (!isRosterMode || !isCompGuaranteeMode || configs.length <= 1)
+        if (!isCompGuaranteeMode || configs.length <= 1)
             return plan;
-        const supportEligible = configs.map((config, idx) => {
-            const lane = lanes[idx];
-            const pool = getPoolForProfile(config);
-            const lanePool = pool.filter(p => checkSynergy(p, lane) === 'MATCH');
-            const targetPool = lanePool.length ? lanePool : pool;
-            return targetPool.some(isTankOrSupport) ? idx : -1;
-        }).filter(idx => idx >= 0);
-        if (!supportEligible.length)
-            return plan.map(() => 'carry');
-        const desired = Math.min(2, supportEligible.length, configs.length >= 5 ? 2 : 1);
-        supportEligible
-            .sort((a, b) => (lanes[a] === '中央エリア') - (lanes[b] === '中央エリア'))
-            .slice(0, desired)
-            .forEach(idx => plan[idx] = 'tank_sup');
+        const chooseSupportForLaneGroup = (lane) => {
+            if (lane === '中央エリア')
+                return;
+            const indices = lanes.map((l, idx) => l === lane ? idx : -1).filter(idx => idx >= 0);
+            if (indices.length < 2)
+                return;
+            let eligible = indices.filter(idx => !isRosterMode || canFillRole(configs[idx], lane, 'tank_sup', true));
+            if (!eligible.length && isRosterMode)
+                eligible = indices.filter(idx => canFillRole(configs[idx], lane, 'tank_sup', false));
+            if (!eligible.length && !isRosterMode)
+                eligible = indices;
+            if (!eligible.length)
+                return;
+            const supportIdx = shuffleArray(eligible)[0];
+            plan[supportIdx] = 'tank_sup';
+        };
+        chooseSupportForLaneGroup('上レーン');
+        chooseSupportForLaneGroup('下レーン');
+        const supportIndices = plan.map((x, idx) => x === 'tank_sup' ? idx : -1).filter(idx => idx >= 0);
+        if (supportIndices.length > 2) {
+            const keep = new Set(shuffleArray(supportIndices).slice(0, 2));
+            plan.forEach((x, idx) => { if (x === 'tank_sup' && !keep.has(idx)) plan[idx] = 'free'; });
+        }
         return plan.map(x => x === 'free' ? 'carry' : x);
+    };
+    const applyCategoryToPool = (pool, isRandomMode, targetDbIndex, catIndex) => {
+        if (isRandomMode || targetDbIndex === null || targetDbIndex === undefined)
+            return pool;
+        return pool.filter(p => {
+            const cats = p.cats[targetDbIndex];
+            return Array.isArray(cats) ? cats.includes(catIndex) : cats === catIndex;
+        });
+    };
+    const applyRoleToPool = (pool, targetRole) => {
+        if (targetRole === 'tank_sup')
+            return pool.filter(isTankOrSupport);
+        if (targetRole === 'carry')
+            return pool.filter(isCarryRole);
+        return pool;
+    };
+    const pickWithFallback = ({ profileConfig, lane, isRandomMode, targetDbIndex, catIndex, targetRole, usedPokemonIds, maxTankSupportReached }) => {
+        const stages = [
+            { label: '指定条件', pool: getPoolForProfile(profileConfig), category: true, lane: true, role: true, unique: true, tankLimit: true },
+            { label: 'カテゴリ補完', pool: getPoolForProfile(profileConfig), category: false, lane: true, role: true, unique: true, tankLimit: true },
+            { label: 'レーン補完', pool: getPoolForProfile(profileConfig), category: false, lane: false, role: true, unique: true, tankLimit: true },
+            { label: 'ロール補完', pool: getPoolForProfile(profileConfig), category: false, lane: false, role: false, unique: true, tankLimit: true },
+            { label: 'メタ条件補完', pool: getPoolForProfile(profileConfig, { ignoreFilter: true }), category: false, lane: false, role: false, unique: true, tankLimit: true },
+            { label: 'ロースター条件補完', pool: getPoolForProfile(profileConfig, { ignoreFilter: true, ignoreRoster: true }), category: false, lane: false, role: false, unique: true, tankLimit: true },
+            { label: '重複回避補完', pool: getPoolForProfile(profileConfig, { ignoreFilter: true, ignoreRoster: true }), category: false, lane: false, role: false, unique: false, tankLimit: true },
+            { label: '最終補完', pool: POKEMON_DB, category: false, lane: false, role: false, unique: false, tankLimit: false }
+        ];
+        for (const stage of stages) {
+            let pool = stage.category ? applyCategoryToPool(stage.pool, isRandomMode, targetDbIndex, catIndex) : stage.pool;
+            if (stage.unique)
+                pool = pool.filter(p => !usedPokemonIds.has(p.id));
+            if (stage.lane)
+                pool = pool.filter(p => checkSynergy(p, lane) === 'MATCH');
+            if (stage.tankLimit && maxTankSupportReached) {
+                const nonSupport = pool.filter(p => !isTankOrSupport(p));
+                if (nonSupport.length)
+                    pool = nonSupport;
+            }
+            if (stage.role)
+                pool = applyRoleToPool(pool, targetRole);
+            if (pool.length) {
+                const picked = shuffleArray(pool)[0];
+                return { pokemon: picked, sourcePool: pool, isFallback: stage.label !== '指定条件', fallbackNotes: stage.label === '指定条件' ? [] : [stage.label] };
+            }
+        }
+        return { pokemon: POKEMON_DB[0], sourcePool: POKEMON_DB, isFallback: true, fallbackNotes: ['最終補完'] };
     };
     const spin = () => {
         const scrollToRouletteStage = () => setTimeout(() => {
@@ -2138,13 +2218,7 @@ const useRoulette = (rouletteProfiles = []) => {
             setPhase('setup');
             return;
         }
-        const emptyConfig = activeConfigs.find(config => getPoolForProfile(config).length === 0);
-        if (emptyConfig) {
-            const label = emptyConfig.poolMode === 'roster' ? 'ロースター' : emptyConfig.poolMode === 'not_roster' ? 'ロースター以外' : 'すべて';
-            setPoolError(`${emptyConfig.displayName || 'プレイヤー'} の条件に合うポケモンがいません。${label}やBlacklistを見直してください。`);
-            setPhase('setup');
-            return;
-        }
+        // 候補が細い場合でも、抽選中に段階的に補完して必ず結果まで出す。
         const currentPool = getPool();
         setPoolError('');
         startSpinSound();
@@ -2183,12 +2257,9 @@ const useRoulette = (rouletteProfiles = []) => {
         let rosterTankSupportCount = 0;
         for (let i = 0; i < spinPlayerCount; i++) {
             const profileConfig = activeConfigs[i];
-            const currentPoolForPlayer = getPoolForProfile(profileConfig);
-            let candidates = [];
             let categoryName = '';
             let catIndex = 0;
             if (isRandomMode) {
-                candidates = currentPoolForPlayer;
                 categoryName = '完全ランダム';
                 const randomSeg = Math.floor(Math.random() * itemsCount);
                 const targetAbs = -(randomSeg * degPerItem + degPerItem / 2);
@@ -2197,6 +2268,7 @@ const useRoulette = (rouletteProfiles = []) => {
                     diff += 360;
                 diff += 360 * 4;
                 newRotations[i] += diff;
+                catIndex = randomSeg;
             }
             else {
                 catIndex = Math.floor(Math.random() * itemsCount);
@@ -2211,78 +2283,29 @@ const useRoulette = (rouletteProfiles = []) => {
                     diff += 360;
                 diff += 360 * 4;
                 newRotations[i] += diff;
-                candidates = currentPoolForPlayer.filter(p => {
-                    // 安全なアクセス (p.cats[undefined]を防ぐ)
-                    if (targetDbIndex === null || targetDbIndex === undefined)
-                        return true;
-                    const cats = p.cats[targetDbIndex];
-                    return Array.isArray(cats) ? cats.includes(catIndex) : cats === catIndex;
-                });
-                if (candidates.length === 0) {
-                    // My Roster / Roster以外などの抽選範囲を超えないよう、現在のプール内で条件を緩和する
-                    candidates = currentPoolForPlayer;
-                }
             }
-            let availableCandidates = candidates.filter(p => !usedPokemonIds.has(p.id));
             const lane = spinPlayerCount === 1 ? ["上レーン", "中央エリア", "下レーン"][Math.floor(Math.random() * 3)] : selectedLanes[i];
-            let finalCandidates = availableCandidates;
-            if ((isCompGuaranteeMode || isRosterMode) && spinPlayerCount > 1) {
-                const synergyCandidates = availableCandidates.filter(p => checkSynergy(p, lane) === 'MATCH');
-                if (synergyCandidates.length > 0)
-                    finalCandidates = synergyCandidates;
-            }
-            if (isRosterMode) {
-                if (rosterTankSupportCount >= 2) {
-                    const nonSupportCandidates = finalCandidates.filter(p => !isTankOrSupport(p));
-                    if (nonSupportCandidates.length > 0)
-                        finalCandidates = nonSupportCandidates;
-                }
-                if (isCompGuaranteeMode && spinPlayerCount > 1) {
-                    const targetRole = rosterRolePlan[i];
-                    const roleCandidates = targetRole === 'tank_sup'
-                        ? finalCandidates.filter(isTankOrSupport)
-                        : finalCandidates.filter(p => !isTankOrSupport(p));
-                    if (roleCandidates.length > 0)
-                        finalCandidates = roleCandidates;
-                }
-            }
-            else if (isCompGuaranteeMode && spinPlayerCount > 1) {
-                const totalInLane = selectedLanes.filter(l => l === lane).length;
-                const currentResultsInLane = newResults.filter(r => r.lane === lane);
-                const isLastSlotForLane = currentResultsInLane.length === totalInLane - 1;
-                const guaranteeCount = currentResultsInLane.filter(r => isTankOrSupport(r.pokemon)).length;
-                if (guaranteeCount >= 1) {
-                    const nonGuaranteeCandidates = finalCandidates.filter(p => !isTankOrSupport(p));
-                    if (nonGuaranteeCandidates.length > 0)
-                        finalCandidates = nonGuaranteeCandidates;
-                }
-                else if (isLastSlotForLane) {
-                    const guaranteeCandidates = finalCandidates.filter(isTankOrSupport);
-                    if (guaranteeCandidates.length > 0)
-                        finalCandidates = guaranteeCandidates;
-                }
-            }
-            if (finalCandidates.length === 0)
-                finalCandidates = candidates;
-            let picked = null;
-            let shuffled = [...finalCandidates].sort(() => 0.5 - Math.random());
-            picked = shuffled[0];
+            const targetRole = (isCompGuaranteeMode && spinPlayerCount > 1) ? rosterRolePlan[i] : 'free';
+            const pickResult = pickWithFallback({ profileConfig, lane, isRandomMode, targetDbIndex, catIndex, targetRole, usedPokemonIds, maxTankSupportReached: isRosterMode && rosterTankSupportCount >= 2 });
+            const picked = pickResult.pokemon;
             if (picked) {
                 usedPokemonIds.add(picked.id);
                 if (isRosterMode && isTankOrSupport(picked))
                     rosterTankSupportCount += 1;
             }
             const synergy = picked ? checkSynergy(picked, lane) : 'MISMATCH';
-            const others = isRandomMode ? [] : candidates.sort(() => 0.5 - Math.random());
+            const others = isRandomMode ? [] : shuffleArray((pickResult.sourcePool || []).filter(p => !picked || p.id !== picked.id)).slice(0, 8);
             newResults.push({
                 playerIndex: i + 1,
                 playerName: (profileConfig && profileConfig.displayName) || `P${i + 1}`,
                 poolMode: (profileConfig && profileConfig.poolMode) || 'all',
+                targetRole,
                 pokemon: picked,
                 lane: lane,
                 categoryLabel: categoryName,
                 categoryModeLabel: modeDef.label,
-                isFallback: false,
+                isFallback: pickResult.isFallback,
+                fallbackNotes: pickResult.fallbackNotes || [],
                 synergy,
                 others
             });
