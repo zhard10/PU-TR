@@ -2029,7 +2029,7 @@ const Footer = ({ onOpenDatabase, onOpenTournamentMeta }) => (React.createElemen
                             " MULTI & MODES"),
                         React.createElement("p", { className: "text-white/70 text-[10px]" }, "\u4EBA\u6570\u306B\u5408\u308F\u305B\u305F\u6700\u9069\u306A\u30EC\u30FC\u30F3\u914D\u5206\u306B\u52A0\u3048\u3001\u7121\u7406\u306A\u69CB\u6210\u3092\u907F\u3051\u308B\u300C\u69CB\u6210\u4FDD\u8A3C\u30E2\u30FC\u30C9\u300D \u74B0\u5883\u306E\u30C8\u30C3\u30D7\u30E1\u30BF\u3092\u512A\u5148\u3057\u3066\u9078\u51FA\u3059\u308B\u300C\u5927\u4F1A\u30E1\u30BF\u30E2\u30FC\u30C9\u300D\u3092\u642D\u8F09\u3002"),
                         React.createElement("p", { className: "text-white/60 text-[10px] mt-1 leading-relaxed" },
-                            "\u69CB\u6210\u4FDD\u8A3C\u30E2\u30FC\u30C9\uFF1A\u9069\u6B63\u30EC\u30FC\u30F3\u9078\u51FA\u306B\u52A0\u3048\u3001\u5404\u30EC\u30FC\u30F3\u306B\u300C\u30B5\u30DD\u30FC\u30C8,\u30BF\u30F3\u30AF\u300D\u30921\u5339\u63A1\u7528\u3002",
+                            "構成保証モード：DUO/TRIOはサイドペア内サポタン最大1、FULLは上下各最大1・全体最大2。中央はキャリー優先。",
                             React.createElement("br", null),
                             "\u5927\u4F1A\u30E1\u30BF\u30E2\u30FC\u30C9\uFF1APUACL 2026 JAPAN LEAGUE Day1\u301CDay5\uFF08\u5168293\u8A66\u5408\uFF09\u306E\u30C7\u30FC\u30BF\u304B\u3089\u9078\u51FA\u3002")),
                     React.createElement("div", null,
@@ -2152,6 +2152,103 @@ const useRoulette = (rouletteProfiles = []) => {
                 scoped = carryCandidates;
         }
         return scoped;
+    };
+    const shuffleCandidates = (list) => [...list].sort(() => 0.5 - Math.random());
+    const getResultCandidatePool = (result) => {
+        const list = Array.isArray(result.guaranteeCandidates) && result.guaranteeCandidates.length
+            ? result.guaranteeCandidates
+            : (result.pokemon ? [result.pokemon] : []);
+        const map = new Map();
+        list.forEach(p => {
+            if (p && !map.has(p.id))
+                map.set(p.id, p);
+        });
+        return [...map.values()];
+    };
+    const getCompSlotCandidates = (result, options) => {
+        let scoped = getResultCandidatePool(result);
+        if (result.lane === '中央エリア' && options.preferCentralCarry) {
+            const carryCandidates = scoped.filter(isCarryRole);
+            if (carryCandidates.length)
+                scoped = carryCandidates;
+        }
+        if (options.preferLaneMatch) {
+            const synergyCandidates = scoped.filter(p => checkSynergy(p, result.lane) === 'MATCH');
+            if (synergyCandidates.length)
+                scoped = synergyCandidates;
+        }
+        return shuffleCandidates(scoped);
+    };
+    const violatesCompGuarantee = (pokemon, lane, assigned, slotResults, count, options) => {
+        if (!options.enforceTankSupport || !pokemon || !isTankOrSupport(pokemon))
+            return false;
+        const fixed = assigned
+            .map((p, idx) => p ? { pokemon: p, lane: slotResults[idx].lane } : null)
+            .filter(Boolean);
+        if (count === 5) {
+            const totalTankSupport = fixed.filter(r => isTankOrSupport(r.pokemon)).length;
+            if (totalTankSupport >= 2)
+                return true;
+        }
+        const sideLimit = getSideTankSupportLimit(lane, count);
+        if (sideLimit !== null) {
+            const laneTankSupport = fixed.filter(r => r.lane === lane && isTankOrSupport(r.pokemon)).length;
+            if (laneTankSupport >= sideLimit)
+                return true;
+        }
+        return false;
+    };
+    const findCompGuaranteedPicks = (slotResults, count, options) => {
+        const assigned = Array(slotResults.length).fill(null);
+        const usedIds = new Set();
+        const slotPools = slotResults.map(result => getCompSlotCandidates(result, options));
+        const search = () => {
+            let targetIndex = -1;
+            let targetCandidates = null;
+            for (let i = 0; i < slotResults.length; i++) {
+                if (assigned[i])
+                    continue;
+                const result = slotResults[i];
+                const available = slotPools[i].filter(p => !usedIds.has(p.id) && !violatesCompGuarantee(p, result.lane, assigned, slotResults, count, options));
+                if (!available.length)
+                    return null;
+                if (!targetCandidates || available.length < targetCandidates.length) {
+                    targetIndex = i;
+                    targetCandidates = available;
+                }
+            }
+            if (targetIndex === -1)
+                return assigned;
+            for (const pokemon of targetCandidates) {
+                assigned[targetIndex] = pokemon;
+                usedIds.add(pokemon.id);
+                const solved = search();
+                if (solved)
+                    return solved;
+                usedIds.delete(pokemon.id);
+                assigned[targetIndex] = null;
+            }
+            return null;
+        };
+        return search();
+    };
+    const resolveCompGuaranteePicks = (slotResults, count) => {
+        if (!isCompGuaranteeMode || count <= 1 || !slotResults.length)
+            return null;
+        const attempts = [
+            { preferLaneMatch: true, preferCentralCarry: true, enforceTankSupport: true },
+            { preferLaneMatch: false, preferCentralCarry: true, enforceTankSupport: true },
+            { preferLaneMatch: true, preferCentralCarry: false, enforceTankSupport: true },
+            { preferLaneMatch: false, preferCentralCarry: false, enforceTankSupport: true },
+            { preferLaneMatch: true, preferCentralCarry: true, enforceTankSupport: false },
+            { preferLaneMatch: false, preferCentralCarry: false, enforceTankSupport: false },
+        ];
+        for (const options of attempts) {
+            const solved = findCompGuaranteedPicks(slotResults, count, options);
+            if (solved)
+                return solved;
+        }
+        return null;
     };
     const spin = () => {
         const scrollToRouletteStage = () => setTimeout(() => {
@@ -2286,8 +2383,20 @@ const useRoulette = (rouletteProfiles = []) => {
                 categoryModeLabel: modeDef.label,
                 isFallback: false,
                 synergy,
-                others
+                others,
+                guaranteeCandidates: candidates
             });
+        }
+        if (isCompGuaranteeMode && spinPlayerCount > 1) {
+            const guaranteedPicks = resolveCompGuaranteePicks(newResults, spinPlayerCount);
+            if (guaranteedPicks) {
+                guaranteedPicks.forEach((picked, idx) => {
+                    if (!picked || !newResults[idx])
+                        return;
+                    newResults[idx].pokemon = picked;
+                    newResults[idx].synergy = checkSynergy(picked, newResults[idx].lane);
+                });
+            }
         }
         setRotations(newRotations);
         // 停止タイルと結果表示を一致させるため、当選結果はスピン開始時点で確定させて渡す
