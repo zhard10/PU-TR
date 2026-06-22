@@ -676,8 +676,6 @@ const getPokemonBadges = (p, options = {}) => {
     if (!p)
         return [];
     const badges = [];
-    if (options.isAce)
-        badges.push({ label: 'ACE', type: 'ace' });
     if (PICKRATE_TOP_SET.has(p.name))
         badges.push({ label: '最新Top', type: 'top' });
     if (PJCS_2026_USED_SET.has(p.name))
@@ -1198,10 +1196,11 @@ const MultiRouletteDisplay = ({ phase, rotations, categoryMode, playerCount, res
     };
     // 「完全ランダム」はルーレット盤面ではなく、全ポケモンタイル盤面で表現する。
     if (categoryMode === 'random') {
-        return React.createElement(TileSpinBoard, { phase: phase, playerCount: playerCount, results: results, tiles: tiles, tileSize: playerCount >= 4 ? 'sm' : 'md' });
+        return React.createElement("div", { id: "roulette-stage", className: "w-full scroll-mt-4" },
+            React.createElement(TileSpinBoard, { phase: phase, playerCount: playerCount, results: results, tiles: tiles, tileSize: playerCount >= 4 ? 'sm' : 'md' }));
     }
     if (playerCount === 1) {
-        return (React.createElement("div", { className: "relative w-64 h-64 md:w-96 md:h-96 mx-auto mt-16 mb-8" },
+        return (React.createElement("div", { id: "roulette-stage", className: "relative w-64 h-64 md:w-96 md:h-96 mx-auto mt-6 mb-6 scroll-mt-4" },
             React.createElement("div", { className: `absolute inset-0 rounded-full border-4 border-neon-cyan opacity-50 ${phase === 'spinning' ? 'animate-pulse' : ''} blur-md` }),
             React.createElement("div", { className: "absolute -top-6 left-1/2 transform -translate-x-1/2 w-8 h-10 z-20 drop-shadow-xl" },
                 React.createElement("div", { className: "w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-t-[32px] border-t-neon-yellow" })),
@@ -1209,7 +1208,7 @@ const MultiRouletteDisplay = ({ phase, rotations, categoryMode, playerCount, res
             React.createElement("div", { className: "absolute top-1/2 -right-8 transform -translate-y-1/2 z-20" },
                 React.createElement(LaneSignal, { phase: phase, lane: getLaneForResult(0), size: "md" }))));
     }
-    const containerClass = `relative w-full h-[420px] md:h-[680px] max-w-md md:max-w-3xl mx-auto ${playerCount === 5 ? 'my-4' : 'my-8'}`;
+    const containerClass = `relative w-full h-[360px] md:h-[640px] max-w-[390px] md:max-w-3xl mx-auto overflow-visible scroll-mt-4 ${playerCount === 5 ? 'my-2' : 'my-6'}`;
     const getPos = (i, total) => {
         if (total === 2)
             return i === 0
@@ -1225,23 +1224,25 @@ const MultiRouletteDisplay = ({ phase, rotations, categoryMode, playerCount, res
         }
         if (total === 5) {
             const angle = (i * 72 - 90) * (Math.PI / 180);
-            const r = 38;
+            const r = 32;
             const x = 50 + r * Math.cos(angle);
             const y = 50 + r * Math.sin(angle);
             return { left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' };
         }
         return {};
     };
-    const sizeClass = playerCount === 5 ? "w-36 h-36 md:w-56 md:h-56" : "w-44 h-44 md:w-72 md:h-72";
-    return (React.createElement("div", { className: containerClass },
+    const sizeClass = playerCount === 5 ? "w-28 h-28 md:w-52 md:h-52" : "w-40 h-40 md:w-72 md:h-72";
+    const getPlayerLabel = (i) => {
+        const r = Array.isArray(results) ? results.find(x => x && x.playerIndex === i + 1) : null;
+        return (r && r.playerName) || `P${i + 1}`;
+    };
+    return (React.createElement("div", { id: "roulette-stage", className: containerClass },
         React.createElement("div", { className: "absolute inset-0 flex items-center justify-center pointer-events-none" }),
-        [...Array(playerCount)].map((_, i) => (React.createElement("div", { key: i, className: `absolute ${sizeClass}`, style: getPos(i, playerCount) },
+        [...Array(playerCount)].map((_, i) => (React.createElement("div", { key: i, className: `absolute ${sizeClass} transition-all duration-500`, style: getPos(i, playerCount) },
             React.createElement("div", { className: "absolute -top-3 left-1/2 transform -translate-x-1/2 w-3 h-5 z-20 drop-shadow-md" },
                 React.createElement("div", { className: "w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[12px] border-t-neon-yellow" })),
             React.createElement(RouletteDisc, { phase: phase, rotation: rotations[i], categoryMode: categoryMode, isMulti: true }),
-            React.createElement("div", { className: "absolute -bottom-4 left-1/2 transform -translate-x-1/2 text-[10px] font-bold text-white bg-black/50 px-2 rounded-full z-30 font-jp" },
-                "P",
-                i + 1),
+            React.createElement("div", { className: "absolute -bottom-4 left-1/2 transform -translate-x-1/2 text-[10px] font-bold text-white bg-black/60 px-2 rounded-full z-30 font-jp max-w-[84px] truncate" }, getPlayerLabel(i)),
             React.createElement("div", { className: "absolute bottom-0 -right-2 z-20" },
                 React.createElement(LaneSignal, { phase: phase, lane: getLaneForResult(i), size: "sm" })))))));
 };
@@ -1255,7 +1256,7 @@ const createDefaultRosterStore = () => {
         activeProfileId: id,
         rouletteProfileId: id,
         rouletteSettings: {
-            [id]: { enabled: false, poolMode: 'all' }
+            [id]: { enabled: true, poolMode: 'all' }
         },
         profiles: {
             [id]: {
@@ -1281,7 +1282,7 @@ const sanitizeRosterStore = (value) => {
             id: safeId,
             displayName: String((p === null || p === void 0 ? void 0 : p.displayName) || 'Player').trim() || 'Player',
             ownedPokemonIds: uniqueIds(p === null || p === void 0 ? void 0 : p.ownedPokemonIds),
-            acePokemonIds: [],
+            acePokemonIds: uniqueIds(p === null || p === void 0 ? void 0 : p.acePokemonIds).filter(pid => uniqueIds(p === null || p === void 0 ? void 0 : p.ownedPokemonIds).includes(pid)),
             blacklistedPokemonIds: uniqueIds(p === null || p === void 0 ? void 0 : p.blacklistedPokemonIds),
             createdAt: (p === null || p === void 0 ? void 0 : p.createdAt) || new Date().toISOString(),
             updatedAt: (p === null || p === void 0 ? void 0 : p.updatedAt) || new Date().toISOString()
@@ -1297,12 +1298,16 @@ const sanitizeRosterStore = (value) => {
     const rouletteSettings = {};
     ids.forEach(id => {
         const raw = rawSettings[id] || {};
-        const legacyEnabled = value.rouletteProfileId ? id === value.rouletteProfileId : false;
+        const legacyEnabled = value.rouletteProfileId ? id === value.rouletteProfileId : id === activeProfileId;
+        const poolMode = validPoolModes.has(raw.poolMode) ? raw.poolMode : 'all';
         rouletteSettings[id] = {
             enabled: typeof raw.enabled === 'boolean' ? raw.enabled : legacyEnabled,
-            poolMode: validPoolModes.has(raw.poolMode) ? raw.poolMode : 'all'
+            poolMode
         };
     });
+    if (!Object.values(rouletteSettings).some(setting => setting.enabled)) {
+        rouletteSettings[activeProfileId] = Object.assign(Object.assign({}, rouletteSettings[activeProfileId]), { enabled: true });
+    }
     return { activeProfileId, rouletteProfileId, rouletteSettings, profiles };
 };
 const loadRosterStore = () => {
@@ -1347,7 +1352,11 @@ const useRosterMemory = () => {
             if (!prev.profiles[profileId])
                 return prev;
             const current = (prev.rouletteSettings || {})[profileId] || { enabled: false, poolMode: 'all' };
-            return Object.assign(Object.assign({}, prev), { rouletteProfileId: profileId, rouletteSettings: Object.assign(Object.assign({}, prev.rouletteSettings || {}), { [profileId]: Object.assign(Object.assign({}, current), { enabled: !current.enabled, poolMode: current.poolMode || 'all' }) }) });
+            const nextSettings = Object.assign(Object.assign({}, prev.rouletteSettings || {}), { [profileId]: Object.assign(Object.assign({}, current), { enabled: !current.enabled, poolMode: current.poolMode || 'all' }) });
+            if (!Object.values(nextSettings).some(setting => setting && setting.enabled)) {
+                nextSettings[profileId] = Object.assign(Object.assign({}, nextSettings[profileId]), { enabled: true });
+            }
+            return Object.assign(Object.assign({}, prev), { rouletteProfileId: profileId, rouletteSettings: nextSettings });
         });
     }, [updateStore]);
     const setRouletteProfilePoolMode = useCallback((profileId, poolMode) => {
@@ -1357,15 +1366,15 @@ const useRosterMemory = () => {
         updateStore(prev => {
             if (!prev.profiles[profileId])
                 return prev;
-            const current = (prev.rouletteSettings || {})[profileId] || { enabled: false, poolMode: 'all' };
-            return Object.assign(Object.assign({}, prev), { rouletteProfileId: profileId, rouletteSettings: Object.assign(Object.assign({}, prev.rouletteSettings || {}), { [profileId]: Object.assign(Object.assign({}, current), { poolMode }) }) });
+            const current = (prev.rouletteSettings || {})[profileId] || { enabled: true, poolMode: 'all' };
+            return Object.assign(Object.assign({}, prev), { rouletteProfileId: profileId, rouletteSettings: Object.assign(Object.assign({}, prev.rouletteSettings || {}), { [profileId]: Object.assign(Object.assign({}, current), { poolMode, enabled: current.enabled !== false }) }) });
         });
     }, [updateStore]);
     const createProfile = useCallback((displayName) => {
         const id = makeProfileId();
         const now = new Date().toISOString();
         const name = String(displayName || 'Player').trim() || 'Player';
-        updateStore(prev => (Object.assign(Object.assign({}, prev), { activeProfileId: id, rouletteProfileId: id, rouletteSettings: Object.assign(Object.assign({}, prev.rouletteSettings || {}), { [id]: { enabled: false, poolMode: 'all' } }), profiles: Object.assign(Object.assign({}, prev.profiles), { [id]: { id, displayName: name, ownedPokemonIds: [], acePokemonIds: [], blacklistedPokemonIds: [], createdAt: now, updatedAt: now } }) })));
+        updateStore(prev => (Object.assign(Object.assign({}, prev), { activeProfileId: id, rouletteProfileId: id, rouletteSettings: Object.assign(Object.assign({}, prev.rouletteSettings || {}), { [id]: { enabled: true, poolMode: 'all' } }), profiles: Object.assign(Object.assign({}, prev.profiles), { [id]: { id, displayName: name, ownedPokemonIds: [], acePokemonIds: [], blacklistedPokemonIds: [], createdAt: now, updatedAt: now } }) })));
     }, [updateStore]);
     const renameActiveProfile = useCallback((displayName) => {
         const name = String(displayName || '').trim();
@@ -1389,6 +1398,9 @@ const useRosterMemory = () => {
             delete nextSettings[prev.activeProfileId];
             const nextActive = Object.keys(nextProfiles)[0];
             const nextRoulette = prev.rouletteProfileId && nextProfiles[prev.rouletteProfileId] ? prev.rouletteProfileId : nextActive;
+            if (!Object.values(nextSettings).some(setting => setting && setting.enabled)) {
+                nextSettings[nextActive] = Object.assign(Object.assign({}, nextSettings[nextActive] || { poolMode: 'all' }), { enabled: true });
+            }
             return { activeProfileId: nextActive, rouletteProfileId: nextRoulette, rouletteSettings: nextSettings, profiles: nextProfiles };
         });
     }, [updateStore]);
@@ -1397,11 +1409,21 @@ const useRosterMemory = () => {
         updateStore(prev => {
             const p = prev.profiles[prev.activeProfileId];
             const owned = uniqueIds(p.ownedPokemonIds);
-            const black = uniqueIds(p.blacklistedPokemonIds);
             const has = owned.includes(id);
             const nextOwned = has ? owned.filter(x => x !== id) : [...owned, id];
-            const nextBlack = has ? black : black.filter(x => x !== id);
-            return Object.assign(Object.assign({}, prev), { profiles: Object.assign(Object.assign({}, prev.profiles), { [p.id]: Object.assign(Object.assign({}, p), { ownedPokemonIds: nextOwned, acePokemonIds: [], blacklistedPokemonIds: nextBlack, updatedAt: new Date().toISOString() }) }) });
+            const nextAce = has ? uniqueIds(p.acePokemonIds).filter(x => x !== id) : uniqueIds(p.acePokemonIds);
+            return Object.assign(Object.assign({}, prev), { profiles: Object.assign(Object.assign({}, prev.profiles), { [p.id]: Object.assign(Object.assign({}, p), { ownedPokemonIds: nextOwned, acePokemonIds: nextAce, updatedAt: new Date().toISOString() }) }) });
+        });
+    }, [updateStore]);
+    const toggleAcePokemon = useCallback((pokemonId) => {
+        const id = Number(pokemonId);
+        updateStore(prev => {
+            const p = prev.profiles[prev.activeProfileId];
+            const owned = uniqueIds(p.ownedPokemonIds);
+            const ace = uniqueIds(p.acePokemonIds);
+            const nextOwned = owned.includes(id) ? owned : [...owned, id];
+            const nextAce = ace.includes(id) ? ace.filter(x => x !== id) : [...ace, id];
+            return Object.assign(Object.assign({}, prev), { profiles: Object.assign(Object.assign({}, prev.profiles), { [p.id]: Object.assign(Object.assign({}, p), { ownedPokemonIds: nextOwned, acePokemonIds: nextAce, updatedAt: new Date().toISOString() }) }) });
         });
     }, [updateStore]);
     const toggleBlacklistPokemon = useCallback((pokemonId) => {
@@ -1409,23 +1431,20 @@ const useRosterMemory = () => {
         updateStore(prev => {
             const p = prev.profiles[prev.activeProfileId];
             const black = uniqueIds(p.blacklistedPokemonIds);
-            const owned = uniqueIds(p.ownedPokemonIds);
-            const has = black.includes(id);
-            const nextBlack = has ? black.filter(x => x !== id) : [...black, id];
-            const nextOwned = has ? owned : owned.filter(x => x !== id);
-            return Object.assign(Object.assign({}, prev), { profiles: Object.assign(Object.assign({}, prev.profiles), { [p.id]: Object.assign(Object.assign({}, p), { ownedPokemonIds: nextOwned, acePokemonIds: [], blacklistedPokemonIds: nextBlack, updatedAt: new Date().toISOString() }) }) });
+            const nextBlack = black.includes(id) ? black.filter(x => x !== id) : [...black, id];
+            return Object.assign(Object.assign({}, prev), { profiles: Object.assign(Object.assign({}, prev.profiles), { [p.id]: Object.assign(Object.assign({}, p), { blacklistedPokemonIds: nextBlack, updatedAt: new Date().toISOString() }) }) });
         });
     }, [updateStore]);
     const rouletteSettings = store.rouletteSettings || {};
     const rouletteProfiles = profiles.map(profile => {
-        const setting = rouletteSettings[profile.id] || { enabled: false, poolMode: 'all' };
+        const setting = rouletteSettings[profile.id] || { enabled: profile.id === store.rouletteProfileId, poolMode: 'all' };
         return {
             id: profile.id,
             profile,
             displayName: profile.displayName,
             ownedPokemonIds: uniqueIds(profile.ownedPokemonIds),
             blacklistedPokemonIds: uniqueIds(profile.blacklistedPokemonIds),
-            enabled: setting.enabled === true,
+            enabled: setting.enabled !== false,
             poolMode: ['all', 'roster', 'not_roster'].includes(setting.poolMode) ? setting.poolMode : 'all'
         };
     });
@@ -1443,6 +1462,7 @@ const useRosterMemory = () => {
         displayName: (activeProfile === null || activeProfile === void 0 ? void 0 : activeProfile.displayName) || 'あなた',
         rouletteDisplayName: (rouletteProfile === null || rouletteProfile === void 0 ? void 0 : rouletteProfile.displayName) || ((activeProfile === null || activeProfile === void 0 ? void 0 : activeProfile.displayName) || 'あなた'),
         ownedPokemonIds: uniqueIds(activeProfile === null || activeProfile === void 0 ? void 0 : activeProfile.ownedPokemonIds),
+        acePokemonIds: uniqueIds(activeProfile === null || activeProfile === void 0 ? void 0 : activeProfile.acePokemonIds),
         blacklistedPokemonIds: uniqueIds(activeProfile === null || activeProfile === void 0 ? void 0 : activeProfile.blacklistedPokemonIds),
         rouletteOwnedPokemonIds: uniqueIds(rouletteProfile === null || rouletteProfile === void 0 ? void 0 : rouletteProfile.ownedPokemonIds),
         rouletteBlacklistedPokemonIds: uniqueIds(rouletteProfile === null || rouletteProfile === void 0 ? void 0 : rouletteProfile.blacklistedPokemonIds),
@@ -1454,91 +1474,82 @@ const useRosterMemory = () => {
         renameActiveProfile,
         deleteActiveProfile,
         toggleOwnedPokemon,
+        toggleAcePokemon,
         toggleBlacklistPokemon
     };
 };
+
+const RouletteModeSelector = ({ mode, onChange }) => (React.createElement("div", { className: "w-full max-w-md md:max-w-3xl mx-auto px-4 mb-3" },
+    React.createElement("div", { className: "grid grid-cols-2 gap-2 glass-panel rounded-2xl p-2" },
+        React.createElement("button", { onClick: () => onChange('normal'), className: `rounded-xl py-3 text-sm font-black border font-jp ${mode === 'normal' ? 'bg-neon-cyan text-aeos-darker border-neon-cyan' : 'bg-black/20 text-white/60 border-white/10'}` }, "通常"),
+        React.createElement("button", { onClick: () => onChange('roster'), className: `rounded-xl py-3 text-sm font-black border font-jp ${mode === 'roster' ? 'bg-neon-yellow text-aeos-darker border-neon-yellow' : 'bg-black/20 text-white/60 border-white/10'}` }, "ロースター"))));
+const CompositionToggle = ({ enabled, onChange, playerCount, compactLabel = '' }) => (React.createElement("div", { className: "w-full max-w-md md:max-w-3xl mx-auto px-4 mt-3" },
+    React.createElement("label", { className: `glass-panel rounded-xl px-3 py-2 flex items-center justify-between gap-3 ${playerCount > 1 ? 'cursor-pointer' : 'opacity-50'}` },
+        React.createElement("div", null,
+            React.createElement("div", { className: "text-xs font-bold text-white font-jp" }, "構成保証モード"),
+            React.createElement("div", { className: "text-[10px] text-white/50 font-jp" }, compactLabel ? `${compactLabel} / ロール抽選＋レーン適性` : "サポタン過多を避け、レーン適性を優先")),
+        React.createElement("input", { type: "checkbox", checked: !!enabled, disabled: playerCount <= 1, onChange: (e) => onChange(e.target.checked), className: "sr-only peer" }),
+        React.createElement("div", { className: "relative w-10 h-5 bg-gray-700 rounded-full transition-colors peer-checked:bg-green-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5" }))));
 const PoolModeSelector = ({ profiles = [], rouletteSettings = {}, activeCount = 0, onToggleRouletteProfile, onSetRoulettePoolMode, onOpenRoster }) => {
-    const options = [
+    const modeOptions = [
         { id: 'all', label: 'すべて' },
-        { id: 'roster', label: 'Roster' },
-        { id: 'not_roster', label: 'Roster以外' },
+        { id: 'roster', label: 'ロースター' },
+        { id: 'not_roster', label: 'ロースター以外' },
     ];
+    const safeProfiles = profiles || [];
+    const enabledCount = safeProfiles.filter(p => (rouletteSettings[p.id] || {}).enabled !== false).length;
     return (React.createElement("div", { className: "w-full max-w-md md:max-w-3xl mx-auto px-4 mt-4" },
         React.createElement("div", { className: "glass-panel rounded-2xl p-3 border-white/20" },
             React.createElement("div", { className: "flex items-center justify-between gap-2 mb-3" },
                 React.createElement("div", { className: "min-w-0 flex-1" },
-                    React.createElement("div", { className: "text-[10px] text-neon-cyan font-bold tracking-widest font-sans" }, "ROSTER PLAYERS"),
-                    React.createElement("div", { className: "text-xs text-white/55 font-jp" }, "ONのプレイヤーごとに抽選範囲を選択")),
-                React.createElement("div", { className: "text-[10px] text-white/60 font-bold" }, activeCount, "/5 ON"),
+                    React.createElement("div", { className: "text-[10px] text-neon-cyan font-bold tracking-widest font-sans" }, "ロースタープレイヤー"),
+                    React.createElement("div", { className: "text-sm font-jp font-bold truncate" }, "ONのプレイヤーごとに抽選"),
+                    React.createElement("div", { className: "text-[10px] text-white/50 font-jp mt-0.5" },
+                        "参加 ", activeCount || enabledCount, "人 / 最大5人")),
                 React.createElement("button", { onClick: onOpenRoster, className: "bg-neon-yellow text-aeos-darker font-bold py-2 px-3 rounded-full transition-all text-xs flex items-center gap-1 font-jp shadow-lg" },
                     React.createElement(CheckCircle, { size: 14 }),
                     " My Roster")),
-            React.createElement("div", { className: "space-y-2" }, profiles.map(profile => {
-                const setting = (rouletteSettings && rouletteSettings[profile.id]) || { enabled: false, poolMode: 'all' };
-                const enabled = setting.enabled === true;
+            React.createElement("div", { className: "space-y-2" }, safeProfiles.map(profile => {
+                const setting = rouletteSettings[profile.id] || { enabled: false, poolMode: 'all' };
+                const enabled = setting.enabled !== false;
                 const poolMode = ['all', 'roster', 'not_roster'].includes(setting.poolMode) ? setting.poolMode : 'all';
                 const ownedCount = uniqueIds(profile.ownedPokemonIds).length;
                 const blackCount = uniqueIds(profile.blacklistedPokemonIds).length;
-                return React.createElement("div", { key: profile.id, className: `rounded-xl border p-2 ${enabled ? 'bg-white/12 border-neon-cyan/70' : 'bg-black/15 border-white/10'}` },
-                    React.createElement("div", { className: "flex items-center gap-2 mb-2" },
-                        React.createElement("button", { onClick: () => onToggleRouletteProfile(profile.id), className: `shrink-0 rounded-full px-3 py-1 text-[10px] font-black border ${enabled ? 'bg-neon-cyan text-aeos-darker border-neon-cyan' : 'bg-black/20 text-white/50 border-white/20'}` }, enabled ? 'ON' : 'OFF'),
+                return React.createElement("div", { key: profile.id, className: `rounded-xl border p-2 ${enabled ? 'bg-white/10 border-neon-cyan/60' : 'bg-black/20 border-white/10 opacity-70'}` },
+                    React.createElement("div", { className: "flex items-center gap-2" },
+                        React.createElement("button", { onClick: () => onToggleRouletteProfile(profile.id), className: `w-12 py-1.5 rounded-lg text-[10px] font-black border shrink-0 ${enabled ? 'bg-neon-cyan text-aeos-darker border-neon-cyan' : 'bg-black/30 text-white/50 border-white/20'}` }, enabled ? 'ON' : 'OFF'),
                         React.createElement("div", { className: "min-w-0 flex-1" },
-                            React.createElement("div", { className: "text-xs font-jp font-black truncate whitespace-nowrap" }, profile.displayName),
-                            React.createElement("div", { className: "text-[9px] text-white/50 font-bold" }, "Roster ", ownedCount, " / Black ", blackCount))),
-                    React.createElement("div", { className: "grid grid-cols-3 gap-1" }, options.map(opt => React.createElement("button", { key: opt.id, onClick: () => onSetRoulettePoolMode(profile.id, opt.id), className: `rounded-lg py-1.5 text-[10px] font-bold border ${poolMode === opt.id ? 'bg-neon-yellow text-aeos-darker border-neon-yellow' : 'bg-black/20 text-white/55 border-white/10'}` }, opt.label))));
+                            React.createElement("div", { className: "text-xs font-jp font-black text-white truncate whitespace-nowrap" }, profile.displayName),
+                            React.createElement("div", { className: "text-[9px] font-bold text-white/45 font-sans" },
+                                "Roster ", ownedCount, " / Black ", blackCount)),
+                        React.createElement("div", { className: "grid grid-cols-3 gap-1 w-[174px] max-w-[52%]" }, modeOptions.map(opt => React.createElement("button", { key: opt.id, onClick: () => onSetRoulettePoolMode(profile.id, opt.id), className: `py-1.5 rounded-md text-[9px] font-black border font-jp leading-none ${poolMode === opt.id ? 'bg-neon-yellow text-aeos-darker border-neon-yellow' : 'bg-black/30 text-white/55 border-white/10'}` }, opt.label)))));
             })),
-            React.createElement("div", { className: "text-[10px] text-white/45 font-jp leading-relaxed mt-3" }, "Rosterモードでは、ONにしたプレイヤーだけを抽選します。Blacklistはそのプレイヤーの候補から常に除外されます。"))));
+            React.createElement("div", { className: "text-[10px] text-white/45 font-jp leading-relaxed mt-3" },
+                "各プレイヤーごとに、全体 / その人のRoster / その人のRoster以外を選べます。Blacklistは常に除外されます。"))));
 };
-const RouletteModeSelector = ({ mode, onChange }) => (React.createElement("div", { className: "w-full max-w-md md:max-w-3xl mx-auto px-4 mb-3" },
-    React.createElement("div", { className: "glass-panel rounded-2xl p-2 grid grid-cols-2 gap-2" },
-        React.createElement("button", { onClick: () => onChange('normal'), className: `rounded-xl py-3 text-sm font-black border font-jp ${mode === 'normal' ? 'bg-neon-cyan text-aeos-darker border-neon-cyan' : 'bg-black/20 text-white/60 border-white/10'}` }, "通常"),
-        React.createElement("button", { onClick: () => onChange('roster'), className: `rounded-xl py-3 text-sm font-black border font-jp ${mode === 'roster' ? 'bg-neon-yellow text-aeos-darker border-neon-yellow' : 'bg-black/20 text-white/60 border-white/10'}` }, "Roster"))));
-const CompositionToggle = ({ enabled, onChange, playerCount, compactLabel = '' }) => (React.createElement("div", { className: "w-full max-w-md md:max-w-3xl mx-auto px-4 mt-3" },
-    React.createElement("label", { className: `glass-panel rounded-xl px-3 py-2 flex items-center justify-between gap-3 ${playerCount > 1 ? 'cursor-pointer' : 'opacity-50'}` },
-        React.createElement("span", { className: "text-xs font-bold text-white flex items-center gap-2 font-jp" },
-            React.createElement(ShieldCheck, { size: 14, className: enabled ? "text-green-400" : "text-gray-400" }),
-            "構成保証モード",
-            compactLabel && React.createElement("span", { className: "text-[10px] text-white/45 font-sans" }, compactLabel)),
-        React.createElement("input", { type: "checkbox", checked: !!enabled, disabled: playerCount <= 1, onChange: (e) => onChange(e.target.checked), className: "sr-only peer" }),
-        React.createElement("div", { className: "relative w-10 h-5 bg-gray-700 rounded-full transition-colors peer-focus:outline-none peer-checked:bg-green-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-5" }))));
-const RosterTile = ({ pokemon, isOwned, isBlacklisted = false, onClick, compact = false, mode = 'roster' }) => {
-    const badges = getPokemonBadges(pokemon, { limit: 2 });
-    const active = mode === 'blacklist' ? isBlacklisted : isOwned;
-    const inactiveLabel = mode === 'blacklist' ? 'Blacklist登録' : 'Roster登録';
+const RosterTile = ({ pokemon, isOwned, isAce, isBlacklisted = false, onClick, onAceClick, onBlacklistClick, compact = false }) => {
+    const badges = getPokemonBadges(pokemon, { isAce, limit: 2 });
     return (React.createElement("button", { onClick: onClick, className: `relative rounded-xl overflow-hidden border transition-all text-center ${compact ? 'min-h-[122px] p-1.5' : 'min-h-[132px] p-2'} ${isBlacklisted ? 'bg-red-950/45 border-neon-pink shadow-[0_0_14px_rgba(244,114,182,0.22)]' : isOwned ? 'bg-white/15 border-neon-cyan shadow-[0_0_14px_rgba(34,211,238,0.25)]' : 'bg-black/20 border-white/10 opacity-70 hover:opacity-100'}` },
-        React.createElement("div", { className: `absolute inset-0 pointer-events-none ${isBlacklisted ? 'bg-gradient-to-br from-red-500/25 via-transparent to-black/20' : ''}` }),
+        React.createElement("div", { className: `absolute inset-0 pointer-events-none ${isAce ? 'bg-gradient-to-br from-neon-yellow/20 via-transparent to-neon-pink/20' : ''} ${isBlacklisted ? 'bg-gradient-to-br from-red-500/25 via-transparent to-black/20' : ''}` }),
         isBlacklisted && React.createElement("div", { className: "absolute top-1 right-1 z-10 text-[8px] px-1.5 py-0.5 rounded-full bg-neon-pink text-white font-black tracking-wide" }, "BLACK"),
-        React.createElement("div", { className: "relative aspect-square mx-auto max-w-[56px] md:max-w-[72px]" },
+        React.createElement("div", { className: "relative aspect-square mx-auto max-w-[58px] md:max-w-[74px]" },
             React.createElement("img", { src: getPokemonImageUrl(pokemon), alt: pokemon.name, loading: "lazy", className: `w-full h-full object-contain drop-shadow-xl ${isBlacklisted ? 'grayscale opacity-60' : ''}`, onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://placehold.co/120x120/4C1D95/FFF?text=?'; } })),
         React.createElement("div", { className: "relative text-[10px] md:text-xs font-jp font-bold truncate mt-1 text-white" }, pokemon.name),
         React.createElement("div", { className: "relative flex flex-wrap gap-1 justify-center min-h-[16px] mt-1" }, badges.map((badge, i) => React.createElement(PokemonBadge, { key: i, badge: badge, compact: true }))),
-        React.createElement("div", { className: `relative inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full border font-bold ${active ? 'bg-white text-aeos-darker border-white' : 'bg-black/20 text-white/55 border-white/20'}` }, active ? 'タップで解除' : inactiveLabel)));
-};
-const MiniPokemonIcon = ({ pokemon, isBlacklisted = false }) => (React.createElement("span", { className: `inline-flex w-5 h-5 rounded-full border shrink-0 items-center justify-center ${isBlacklisted ? 'bg-red-950/50 border-neon-pink/60' : 'bg-white/10 border-white/15'}` },
-    React.createElement("img", { src: getPokemonImageUrl(pokemon), alt: pokemon.name, loading: "lazy", className: `w-5 h-5 object-contain ${isBlacklisted ? 'grayscale opacity-70' : ''}`, onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://placehold.co/32x32/4C1D95/FFF?text=?'; } })));
-const ProfileRosterStrip = ({ profile, isActive, onSelect }) => {
-    const owned = uniqueIds(profile.ownedPokemonIds).map(id => POKEMON_DB.find(p => p.id === id)).filter(Boolean);
-    const black = uniqueIds(profile.blacklistedPokemonIds).map(id => POKEMON_DB.find(p => p.id === id)).filter(Boolean);
-    const preview = owned.slice(0, 18);
-    return (React.createElement("button", { onClick: onSelect, className: `w-full rounded-2xl border p-2 text-left transition-all ${isActive ? 'bg-white/15 border-neon-cyan shadow-[0_0_12px_rgba(34,211,238,.25)]' : 'bg-black/15 border-white/10'}` },
-        React.createElement("div", { className: "flex items-center gap-2" },
-            React.createElement("div", { className: "w-16 shrink-0" },
-                React.createElement("div", { className: "text-[11px] font-jp font-black text-white truncate leading-tight" }, profile.displayName),
-                React.createElement("div", { className: "text-[9px] text-white/50 font-bold leading-tight" }, owned.length, "体 / BL ", black.length)),
-            React.createElement("div", { className: "flex-1 min-w-0 overflow-hidden" },
-                preview.length === 0 ? React.createElement("div", { className: "text-[10px] text-white/35 font-jp" }, "未登録") : React.createElement("div", { className: "flex gap-1 items-center overflow-hidden whitespace-nowrap" }, preview.map(p => React.createElement(MiniPokemonIcon, { key: p.id, pokemon: p })), owned.length > preview.length && React.createElement("span", { className: "text-[9px] text-white/50 font-bold ml-1" }, "+", owned.length - preview.length))),
-            isActive && React.createElement("div", { className: "text-[9px] font-black text-neon-cyan shrink-0" }, "EDIT"))));
+        (onAceClick || onBlacklistClick) && (React.createElement("div", { className: "relative flex justify-center gap-1 mt-1" },
+            onAceClick && React.createElement("span", { onClick: (e) => { e.stopPropagation(); onAceClick(); }, className: `inline-flex text-[9px] px-1.5 py-0.5 rounded-full border font-bold ${isAce ? 'bg-neon-yellow text-aeos-darker border-neon-yellow' : 'bg-white/10 text-white/60 border-white/20'}` }, isAce ? 'ACE' : 'ACE'),
+            onBlacklistClick && React.createElement("span", { onClick: (e) => { e.stopPropagation(); onBlacklistClick(); }, className: `inline-flex text-[9px] px-1.5 py-0.5 rounded-full border font-bold ${isBlacklisted ? 'bg-neon-pink text-white border-neon-pink' : 'bg-black/20 text-white/60 border-white/20'}` }, isBlacklisted ? 'BL解除' : 'BL')))));
 };
 const MyRosterView = ({ onBack, roster }) => {
     const [mode, setMode] = useState('view');
-    const [editTarget, setEditTarget] = useState('roster');
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState('all');
     const [selectedPokemon, setSelectedPokemon] = useState(null);
     const [draftName, setDraftName] = useState(roster.displayName);
     const ownedSet = useMemo(() => new Set(roster.ownedPokemonIds), [roster.ownedPokemonIds]);
+    const aceSet = useMemo(() => new Set(roster.acePokemonIds), [roster.acePokemonIds]);
     const blackSet = useMemo(() => new Set(roster.blacklistedPokemonIds), [roster.blacklistedPokemonIds]);
-    useEffect(() => { setDraftName(roster.displayName); setSelectedPokemon(null); }, [roster.displayName, roster.activeProfileId]);
+    useEffect(() => { setDraftName(roster.displayName); }, [roster.displayName, roster.activeProfileId]);
     const ownedIndex = useMemo(() => {
         const map = new Map();
         roster.ownedPokemonIds.forEach((id, i) => map.set(id, i));
@@ -1546,6 +1557,8 @@ const MyRosterView = ({ onBack, roster }) => {
     }, [roster.ownedPokemonIds]);
     const scorePokemon = (p) => {
         let score = 0;
+        if (aceSet.has(p.id))
+            score += 1000;
         if (PICKRATE_TOP_SET.has(p.name))
             score += 300;
         if (TOURNAMENT_META_SET.has(p.name))
@@ -1556,97 +1569,85 @@ const MyRosterView = ({ onBack, roster }) => {
     };
     const rosterPokemon = useMemo(() => POKEMON_DB
         .filter(p => ownedSet.has(p.id))
-        .sort((a, b) => { var _a, _b; return scorePokemon(b) - scorePokemon(a) || ((_a = ownedIndex.get(a.id)) !== null && _a !== void 0 ? _a : 9999) - ((_b = ownedIndex.get(b.id)) !== null && _b !== void 0 ? _b : 9999); }), [ownedSet, ownedIndex]);
-    const blacklistedPokemon = useMemo(() => POKEMON_DB.filter(p => blackSet.has(p.id)).sort((a, b) => a.id - b.id), [blackSet]);
+        .sort((a, b) => { var _a, _b; return scorePokemon(b) - scorePokemon(a) || ((_a = ownedIndex.get(a.id)) !== null && _a !== void 0 ? _a : 9999) - ((_b = ownedIndex.get(b.id)) !== null && _b !== void 0 ? _b : 9999); }), [ownedSet, aceSet, ownedIndex]);
     const editPokemon = useMemo(() => {
         let list = POKEMON_DB.filter(p => searchTerm === '' || p.name.includes(searchTerm) || p.tags.some(t => t.includes(searchTerm)));
         if (filter === 'owned')
             list = list.filter(p => ownedSet.has(p.id));
         if (filter === 'unowned')
             list = list.filter(p => !ownedSet.has(p.id));
+        if (filter === 'ace')
+            list = list.filter(p => aceSet.has(p.id));
         if (filter === 'black')
             list = list.filter(p => blackSet.has(p.id));
         if (filter === 'popular')
             list = list.filter(p => PICKRATE_TOP_SET.has(p.name));
         if (filter === 'tournament')
             list = list.filter(p => TOURNAMENT_META_SET.has(p.name));
-        return list.sort((a, b) => {
-            const activeA = editTarget === 'blacklist' ? blackSet.has(a.id) : ownedSet.has(a.id);
-            const activeB = editTarget === 'blacklist' ? blackSet.has(b.id) : ownedSet.has(b.id);
-            return (activeB - activeA) || scorePokemon(b) - scorePokemon(a) || a.id - b.id;
-        });
-    }, [searchTerm, filter, ownedSet, blackSet, editTarget]);
+        return list.sort((a, b) => (ownedSet.has(b.id) - ownedSet.has(a.id)) || scorePokemon(b) - scorePokemon(a) || a.id - b.id);
+    }, [searchTerm, filter, ownedSet, aceSet, blackSet]);
     const filters = [
-        { id: 'all', label: 'すべて' }, { id: 'owned', label: 'Roster' }, { id: 'unowned', label: '未登録' },
-        { id: 'black', label: 'Blacklist' }, { id: 'popular', label: 'ピック率上位' }, { id: 'tournament', label: '大会メタ' },
+        { id: 'all', label: 'すべて' }, { id: 'owned', label: '登録済み' }, { id: 'unowned', label: '未登録' },
+        { id: 'ace', label: 'ACE' }, { id: 'black', label: 'ブラック' }, { id: 'popular', label: 'ピック率上位' }, { id: 'tournament', label: '大会メタ' },
     ];
     const activeCanDelete = roster.profiles.length > 1;
-    const handleTileClick = (p) => {
-        if (editTarget === 'blacklist')
-            roster.toggleBlacklistPokemon(p.id);
-        else
-            roster.toggleOwnedPokemon(p.id);
-    };
     return (React.createElement("div", { className: "w-full max-w-4xl mx-auto px-4 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500" },
         React.createElement("div", { className: "flex items-center justify-between mb-4 sticky top-0 bg-aeos-darker/90 backdrop-blur-md z-30 py-3 border-b border-white/10 -mx-4 px-4" },
             React.createElement("button", { onClick: onBack, className: "flex items-center gap-1 text-white hover:text-neon-cyan transition-colors" },
                 React.createElement(ArrowLeft, { size: 20 }),
-                React.createElement("span", { className: "font-bold text-sm font-sans" }, "戻る")),
+                React.createElement("span", { className: "font-bold text-sm font-sans" }, "\u623B\u308B")),
             React.createElement("h2", { className: "text-lg font-bold text-white font-display flex items-center gap-2" },
                 React.createElement(CheckCircle, { size: 20, className: "text-neon-yellow" }),
-                "My Roster"),
-            React.createElement("button", { onClick: () => setMode(mode === 'view' ? 'edit' : 'view'), className: `rounded-full px-4 py-2 text-xs font-bold font-jp border ${mode === 'edit' ? 'bg-neon-yellow text-aeos-darker border-neon-yellow' : 'bg-neon-pink text-white border-neon-pink'}` }, mode === 'edit' ? '表示' : '編集')),
-        React.createElement("div", { className: "glass-panel rounded-2xl p-3 mb-4 space-y-2" },
-            React.createElement("div", { className: "flex items-center justify-between" },
-                React.createElement("div", null,
-                    React.createElement("div", { className: "text-[10px] text-neon-cyan font-bold tracking-[0.22em] font-sans" }, "PLAYERS"),
-                    React.createElement("div", { className: "text-xs text-white/55 font-jp" }, "登録プレイヤーとRoster一覧")),
-                React.createElement("div", { className: "text-[10px] text-white/55 font-bold" }, roster.profiles.length, "人")),
-            React.createElement("div", { className: "space-y-2" }, roster.profiles.map(p => React.createElement(ProfileRosterStrip, { key: p.id, profile: p, isActive: p.id === roster.activeProfileId, onSelect: () => roster.switchProfile(p.id) })))),
+                "My Roster",
+                React.createElement("span", { className: "text-xs bg-white/10 px-2 py-0.5 rounded-full text-white/70 font-sans" },
+                    roster.ownedPokemonIds.length,
+                    "\u5339"))),
         React.createElement("div", { className: "glass-panel rounded-3xl p-4 mb-4 overflow-hidden relative" },
             React.createElement("div", { className: "absolute -top-10 -right-8 w-40 h-40 rounded-full bg-neon-cyan/20 blur-3xl" }),
             React.createElement("div", { className: "absolute -bottom-12 -left-10 w-44 h-44 rounded-full bg-neon-pink/20 blur-3xl" }),
             React.createElement("div", { className: "relative flex items-end justify-between gap-3" },
                 React.createElement("div", { className: "min-w-0" },
-                    React.createElement("div", { className: "text-[10px] text-neon-cyan font-bold tracking-[0.25em] font-sans" }, mode === 'edit' ? 'ROSTER EDIT' : 'ROSTER BOARD'),
-                    React.createElement("div", { className: "text-2xl md:text-3xl font-jp font-black text-white truncate text-glow whitespace-nowrap" }, roster.displayName),
-                    React.createElement("div", { className: "text-xs text-white/65 font-sans mt-1" }, mode === 'edit' ? 'RosterとBlacklistを同じ操作感で登録' : '自信のあるキャラを集める勝負ボード')),
+                    React.createElement("div", { className: "text-[10px] text-neon-cyan font-bold tracking-[0.25em] font-sans" }, "ACE ROSTER"),
+                    React.createElement("div", { className: "text-2xl md:text-3xl font-jp font-black text-white truncate text-glow" }, roster.displayName),
+                    React.createElement("div", { className: "text-xs text-white/65 font-sans mt-1" }, "\u81EA\u4FE1\u306E\u3042\u308B\u30AD\u30E3\u30E9\u3092\u96C6\u3081\u308B\u52DD\u8CA0\u30DC\u30FC\u30C9")),
                 React.createElement("div", { className: "text-right shrink-0" },
                     React.createElement("div", { className: "text-2xl font-display font-bold text-neon-yellow" }, roster.ownedPokemonIds.length),
                     React.createElement("div", { className: "text-[10px] text-white/60 font-bold" }, "ROSTER"),
-                    React.createElement("div", { className: "text-[10px] text-neon-pink font-bold mt-1" }, "BLACK ", roster.blacklistedPokemonIds.length)))),
+                    React.createElement("div", { className: "text-[10px] text-neon-pink font-bold mt-1" },
+                        "ACE ",
+                        roster.acePokemonIds.length)))),
         React.createElement("div", { className: "glass-panel rounded-2xl p-3 mb-4 space-y-3" },
+            React.createElement("div", { className: "grid grid-cols-[1fr_auto] gap-2 items-center" },
+                React.createElement("select", { value: roster.activeProfileId, onChange: (e) => roster.switchProfile(e.target.value), className: "bg-black/30 border border-white/20 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-neon-cyan font-sans" }, roster.profiles.map(p => React.createElement("option", { key: p.id, value: p.id, className: "bg-aeos-darker text-white" }, p.displayName))),
+                React.createElement("button", { onClick: () => setMode(mode === 'view' ? 'edit' : 'view'), className: `rounded-lg px-4 py-2 text-xs font-bold font-jp border ${mode === 'edit' ? 'bg-neon-yellow text-aeos-darker border-neon-yellow' : 'bg-neon-pink text-white border-neon-pink'}` }, mode === 'edit' ? '表示へ' : '編集')),
             React.createElement("div", { className: "grid grid-cols-[1fr_auto_auto] gap-2" },
-                React.createElement("input", { value: draftName, onChange: (e) => setDraftName(e.target.value), placeholder: "プレイヤー名", className: "bg-black/30 border border-white/20 rounded-lg py-2 px-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-neon-cyan font-sans min-w-0" }),
-                React.createElement("button", { onClick: () => roster.renameActiveProfile(draftName), className: "bg-white/10 border border-white/20 rounded-lg px-3 text-xs font-bold font-jp whitespace-nowrap" }, "名前保存"),
-                React.createElement("button", { onClick: () => roster.createProfile(draftName), className: "bg-neon-cyan text-aeos-darker rounded-lg px-3 text-xs font-bold font-jp whitespace-nowrap" }, "追加")),
-            React.createElement("div", { className: "text-[10px] text-white/45 font-jp" }, "上のプレイヤー一覧をタップすると編集対象が切り替わります。新規追加は入力中の名前で作成します。"),
-            activeCanDelete && React.createElement("button", { onClick: roster.deleteActiveProfile, className: "w-full bg-black/20 border border-white/10 rounded-lg py-2 text-xs text-white/60 font-bold font-jp" }, "このプレイヤーを削除")),
+                React.createElement("input", { value: draftName, onChange: (e) => setDraftName(e.target.value), placeholder: "\u30D7\u30EC\u30A4\u30E4\u30FC\u540D", className: "bg-black/30 border border-white/20 rounded-lg py-2 px-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-neon-cyan font-sans" }),
+                React.createElement("button", { onClick: () => roster.renameActiveProfile(draftName), className: "bg-white/10 border border-white/20 rounded-lg px-3 text-xs font-bold font-jp" }, "\u540D\u524D\u4FDD\u5B58"),
+                React.createElement("button", { onClick: () => roster.createProfile(draftName), className: "bg-neon-cyan text-aeos-darker rounded-lg px-3 text-xs font-bold font-jp" }, "\u8FFD\u52A0")),
+            activeCanDelete && React.createElement("button", { onClick: roster.deleteActiveProfile, className: "w-full bg-black/20 border border-white/10 rounded-lg py-2 text-xs text-white/60 font-bold font-jp" }, "\u3053\u306E\u30D7\u30EC\u30A4\u30E4\u30FC\u3092\u524A\u9664")),
         mode === 'view' && (React.createElement(React.Fragment, null,
             rosterPokemon.length === 0 ? (React.createElement("div", { className: "glass-panel rounded-2xl p-8 text-center text-white/70 font-jp" },
-                "まだMy Rosterに登録がありません。",
+                "\u307E\u3060My Roster\u306B\u767B\u9332\u304C\u3042\u308A\u307E\u305B\u3093\u3002",
                 React.createElement("br", null),
-                React.createElement("button", { onClick: () => setMode('edit'), className: "mt-4 bg-neon-yellow text-aeos-darker font-bold px-5 py-2 rounded-full" }, "編集する"))) : (React.createElement("div", { className: "grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3" }, rosterPokemon.map(p => (React.createElement(RosterTile, { key: p.id, pokemon: p, isOwned: true, isBlacklisted: blackSet.has(p.id), compact: true, onClick: () => setSelectedPokemon((selectedPokemon === null || selectedPokemon === void 0 ? void 0 : selectedPokemon.id) === p.id ? null : p) }))))),
+                React.createElement("button", { onClick: () => setMode('edit'), className: "mt-4 bg-neon-yellow text-aeos-darker font-bold px-5 py-2 rounded-full" }, "\u7DE8\u96C6\u3059\u308B"))) : (React.createElement("div", { className: "grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3" }, rosterPokemon.map(p => (React.createElement(RosterTile, { key: p.id, pokemon: p, isOwned: true, isAce: aceSet.has(p.id), isBlacklisted: blackSet.has(p.id), compact: true, onClick: () => setSelectedPokemon((selectedPokemon === null || selectedPokemon === void 0 ? void 0 : selectedPokemon.id) === p.id ? null : p) }))))),
             selectedPokemon && (React.createElement("div", { className: "glass-panel rounded-2xl p-4 mt-4 flex items-center gap-3" },
                 React.createElement("img", { src: getPokemonImageUrl(selectedPokemon), className: "w-16 h-16 object-contain", onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://placehold.co/120x120/4C1D95/FFF?text=?'; } }),
                 React.createElement("div", { className: "flex-1 min-w-0" },
                     React.createElement("div", { className: "font-jp font-bold text-lg truncate" }, selectedPokemon.name),
-                    React.createElement("div", { className: "text-xs text-white/60 font-sans" }, selectedPokemon.role, " / ", selectedPokemon.lane),
-                    React.createElement("div", { className: "flex flex-wrap gap-1 mt-2" }, getPokemonBadges(selectedPokemon, { limit: 4 }).map((b, i) => React.createElement(PokemonBadge, { key: i, badge: b })))),
+                    React.createElement("div", { className: "text-xs text-white/60 font-sans" },
+                        selectedPokemon.role,
+                        " / ",
+                        selectedPokemon.lane),
+                    React.createElement("div", { className: "flex flex-wrap gap-1 mt-2" }, getPokemonBadges(selectedPokemon, { isAce: aceSet.has(selectedPokemon.id), limit: 4 }).map((b, i) => React.createElement(PokemonBadge, { key: i, badge: b })))),
                 React.createElement("div", { className: "flex flex-col gap-2" },
-                    React.createElement("button", { onClick: () => { roster.toggleOwnedPokemon(selectedPokemon.id); setSelectedPokemon(null); }, className: "bg-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white/70" }, "解除"))))),
-            blacklistedPokemon.length > 0 && React.createElement("div", { className: "glass-panel rounded-2xl p-3 mt-4" },
-                React.createElement("div", { className: "text-xs font-bold text-neon-pink mb-2 font-jp" }, "Blacklist"),
-                React.createElement("div", { className: "flex gap-1 overflow-hidden" }, blacklistedPokemon.slice(0, 24).map(p => React.createElement(MiniPokemonIcon, { key: p.id, pokemon: p, isBlacklisted: true })), blacklistedPokemon.length > 24 && React.createElement("span", { className: "text-[10px] text-white/50 ml-1" }, "+", blacklistedPokemon.length - 24))))),
+                    React.createElement("button", { onClick: () => roster.toggleAcePokemon(selectedPokemon.id), className: "bg-neon-yellow text-aeos-darker rounded-lg px-3 py-2 text-xs font-bold" }, aceSet.has(selectedPokemon.id) ? 'ACE解除' : 'ACE'),
+                    React.createElement("button", { onClick: () => { roster.toggleOwnedPokemon(selectedPokemon.id); setSelectedPokemon(null); }, className: "bg-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white/70" }, "\u89E3\u9664")))))),
         mode === 'edit' && (React.createElement(React.Fragment, null,
             React.createElement("div", { className: "glass-panel rounded-2xl p-3 mb-4 space-y-3" },
-                React.createElement("div", { className: "grid grid-cols-2 gap-2" },
-                    React.createElement("button", { onClick: () => setEditTarget('roster'), className: `rounded-xl py-3 text-sm font-black border font-jp ${editTarget === 'roster' ? 'bg-neon-cyan text-aeos-darker border-neon-cyan' : 'bg-black/20 text-white/60 border-white/10'}` }, "Roster登録"),
-                    React.createElement("button", { onClick: () => setEditTarget('blacklist'), className: `rounded-xl py-3 text-sm font-black border font-jp ${editTarget === 'blacklist' ? 'bg-neon-pink text-white border-neon-pink' : 'bg-black/20 text-white/60 border-white/10'}` }, "Blacklist登録")),
-                React.createElement("input", { type: "text", placeholder: "ポケモン名・タグで検索", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), className: "w-full bg-black/30 border border-white/20 rounded-lg py-2 px-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-neon-cyan font-sans" }),
+                React.createElement("input", { type: "text", placeholder: "\u30DD\u30B1\u30E2\u30F3\u540D\u30FB\u30BF\u30B0\u3067\u691C\u7D22", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), className: "w-full bg-black/30 border border-white/20 rounded-lg py-2 px-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-neon-cyan font-sans" }),
                 React.createElement("div", { className: "flex flex-wrap gap-2" }, filters.map(f => (React.createElement("button", { key: f.id, onClick: () => setFilter(f.id), className: `px-3 py-1 rounded-full text-xs font-bold border transition-all font-jp whitespace-nowrap ${filter === f.id ? 'bg-neon-yellow border-neon-yellow text-black shadow-lg' : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'}` }, f.label)))),
-                React.createElement("div", { className: "text-[10px] text-white/55 font-jp leading-relaxed" }, editTarget === 'roster' ? 'カードをタップするとMy Rosterに登録/解除。Blacklist中のポケモンをRosterに入れるとBlacklistから外れます。' : 'カードをタップするとBlacklistに登録/解除。Blacklistに入るとルーレットから除外され、Rosterからも外れます。')),
-            React.createElement("div", { className: "grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3" }, editPokemon.map(p => (React.createElement(RosterTile, { key: p.id, pokemon: p, isOwned: ownedSet.has(p.id), isBlacklisted: blackSet.has(p.id), compact: true, mode: editTarget, onClick: () => handleTileClick(p) })))))));
+                React.createElement("div", { className: "text-[10px] text-white/50 font-sans" }, "\u30AB\u30FC\u30C9\u3092\u30BF\u30C3\u30D7\u3067My Roster\u767B\u9332/\u89E3\u9664\u3002ACE\u306F\u8907\u6570\u8A2D\u5B9A\u3067\u304D\u307E\u3059\u3002")),
+            React.createElement("div", { className: "grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3" }, editPokemon.map(p => (React.createElement(RosterTile, { key: p.id, pokemon: p, isOwned: ownedSet.has(p.id), isAce: aceSet.has(p.id), isBlacklisted: blackSet.has(p.id), compact: true, onClick: () => roster.toggleOwnedPokemon(p.id), onAceClick: () => roster.toggleAcePokemon(p.id), onBlacklistClick: () => roster.toggleBlacklistPokemon(p.id) }))))))));
 };
 const SettingsPanel = ({ filterMode, setFilterMode, playerCount }) => {
     var _a;
@@ -1776,6 +1777,7 @@ ${url}`;
                     React.createElement("div", { className: "text-[10px] text-white/80 uppercase tracking-[0.3em] mb-1 font-bold font-sans" }, "Roulette Result"),
                     React.createElement("div", { className: "font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-tight my-1 font-jp text-xl md:text-3xl" }, formatCategoryLabel(categoryLabel)),
                     React.createElement("div", { className: "text-[10px] text-neon-cyan font-bold tracking-wider opacity-80 mb-1 font-sans" }, categoryModeLabel),
+                    result.playerName && React.createElement("div", { className: "text-[10px] text-white/65 font-bold font-jp mb-1" }, result.playerName),
                     React.createElement("div", { className: `mt-2 py-1 px-3 rounded-xl border inline-flex items-center gap-2 ${isMatch ? 'bg-neon-blue/20 border-neon-blue text-white' : 'bg-red-500/20 border-red-500 text-red-100'}` },
                         React.createElement("div", { className: `text-sm md:text-xl font-bold flex items-center gap-1 ${laneColorClass} font-sans` },
                             React.createElement(MapPin, { size: 14 }),
@@ -1789,6 +1791,10 @@ ${url}`;
                         React.createElement("div", { className: "w-40 h-40 md:w-64 md:h-64 mb-1 relative transition-all duration-300" },
                             React.createElement("div", { className: `absolute inset-0 blur-xl rounded-full animate-pulse ${isMatch ? 'bg-neon-cyan/20' : 'bg-red-500/30'}` }),
                             React.createElement("img", { key: displayPokemon.id, src: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${displayPokemon.dexId}.png`, alt: displayPokemon.name, className: "w-full h-full object-contain relative z-10 drop-shadow-2xl animate-float", onError: (e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/150x150/4C1D95/FFF?text=?'; } })),
+                        React.createElement("div", { className: "w-full grid grid-cols-3 gap-1 mb-2 text-[10px] md:text-xs font-bold font-jp" },
+                            React.createElement("div", { className: "bg-black/30 rounded-lg px-2 py-1 text-white/80 truncate" }, result.playerName || `P${result.playerIndex || 1}`),
+                            React.createElement("div", { className: "bg-neon-pink/20 rounded-lg px-2 py-1 text-neon-pink truncate" }, displayPokemon.name),
+                            React.createElement("div", { className: "bg-neon-cyan/20 rounded-lg px-2 py-1 text-neon-cyan truncate" }, result.lane)),
                         React.createElement("h2", { className: "text-xl md:text-3xl font-jp font-bold text-white mb-2" }, displayPokemon.name),
                         React.createElement("div", { className: "w-full space-y-1 mb-1" }, displayTags.map((tag, idx) => (React.createElement("div", { key: idx, className: `rounded-md py-0.5 px-2 text-[10px] md:text-sm font-sans border ${isMatch ? 'bg-white/10 text-white/90 border-white/10' : 'bg-red-900/30 text-red-100 border-red-500/30'}` }, tag)))))),
                 React.createElement(SecondaryCandidates, { others: others, onSelect: setDisplayPokemon, categoryLabel: categoryLabel, currentSelection: displayPokemon, allSelections: [{ pokemon: displayPokemon }] }))),
@@ -1833,15 +1839,16 @@ const ResultCardMini = ({ res, idx, onClick, isSelected }) => {
     else if (isSelected)
         cardClasses += 'bg-white/10 ';
     return (React.createElement("div", { onClick: onClick, className: cardClasses },
-        React.createElement("div", { className: "absolute top-0 left-0 bg-white/20 px-2 py-0.5 text-[10px] font-bold rounded-br-lg text-white font-jp" },
+        React.createElement("div", { className: "absolute top-0 left-0 bg-white/20 px-2 py-0.5 text-[10px] font-bold rounded-br-lg text-white font-jp max-w-[70%] truncate" },
             "#",
-            idx),
+            idx,
+            res.playerName ? ` ${res.playerName}` : ''),
         React.createElement("div", { className: "w-12 h-12 md:w-20 md:h-20 flex-shrink-0 relative" },
             React.createElement("img", { src: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${res.pokemon.dexId}.png`, className: "w-full h-full object-contain relative z-10" })),
-        React.createElement("div", { className: "flex-grow min-w-0 flex flex-col justify-center" },
-            React.createElement("div", { className: "text-sm md:text-xl font-bold text-neon-pink mb-0.5 font-jp truncate" }, formatLabelMini(res.categoryLabel)),
-            React.createElement("div", { className: "flex items-center justify-between" },
-                React.createElement("div", { className: "text-xs md:text-lg font-bold text-white truncate leading-tight opacity-80 font-jp" }, res.pokemon.name),
+        React.createElement("div", { className: "flex-grow min-w-0 flex flex-col justify-center pt-1" },
+            React.createElement("div", { className: "text-[10px] md:text-xs font-bold text-white/60 font-jp truncate" }, formatLabelMini(res.categoryLabel)),
+            React.createElement("div", { className: "flex items-center justify-between gap-2" },
+                React.createElement("div", { className: "text-sm md:text-lg font-black text-white truncate leading-tight font-jp" }, res.pokemon.name),
                 React.createElement("div", { className: "flex flex-col items-end" },
                     React.createElement("div", { className: `text-lg md:text-2xl font-black flex items-center gap-1 ${laneColorClass} font-sans` },
                         React.createElement(MapPin, { size: 16, className: "md:w-6 md:h-6" }),
@@ -1883,8 +1890,8 @@ const MultiResultView = ({ results, onReset, checkSynergy }) => {
     return (React.createElement("div", { className: "relative z-20 w-full max-w-md md:max-w-3xl mx-auto p-4 animate-in zoom-in-95 duration-500" },
         React.createElement(ConfettiEffect, null),
         React.createElement("div", { className: "mb-2 text-center text-xs font-bold text-white font-sans" },
-            React.createElement("span", { className: "text-neon-pink" }, "MULTI-SQUAD:"),
-            " \u3053\u306E\u5E03\u9663\u3067\u52DD\u5229\u3092\u63B4\u3081\uFF01"),
+            React.createElement("span", { className: "text-neon-pink" }, "ROUTE RESULT:"),
+            " 誰が・どのポケモンで・どこへ行くか"),
         React.createElement("div", { className: "bg-aeos-darker/50 p-2 rounded-2xl grid gap-2 md:gap-4 mb-2" }, displayResults.map((res, i) => (React.createElement(ResultCardMini, { key: res.playerIndex, res: res, idx: res.displayIndex, isSelected: selectedIdx === i, onClick: () => setSelectedIdx(i) })))),
         React.createElement("div", { className: "animate-in fade-in slide-in-from-bottom-2 duration-300" },
             React.createElement(SecondaryCandidates, { others: displayResults[selectedIdx].others, onSelect: handleSwapPokemon, categoryLabel: displayResults[selectedIdx].categoryLabel, currentSelection: displayResults[selectedIdx].pokemon, allSelections: displayResults }),
@@ -2037,7 +2044,7 @@ const Footer = ({ onOpenDatabase, onOpenTournamentMeta }) => (React.createElemen
 const useRoulette = (rouletteProfiles = []) => {
     const [filterMode, setFilterMode] = useState('default');
     const [poolMode, setPoolMode] = useState('all');
-    const [categoryMode, setCategoryMode] = useState('elements');
+    const [categoryMode, setCategoryMode] = useState('elements'); // Default to Looks
     const [playerCount, setPlayerCount] = useState(1);
     const [rouletteMode, setRouletteMode] = useState('normal');
     const [isCompGuaranteeMode, setIsCompGuaranteeMode] = useState(false);
@@ -2053,6 +2060,7 @@ const useRoulette = (rouletteProfiles = []) => {
             return "MATCH";
         return "MISMATCH";
     };
+    // 構成保証ロジック: 設定(CONFIG_TANK_SUPPORT_EXCEPTIONS)を使用
     const isTankOrSupport = (p) => ['Defender', 'Supporter'].includes(p.role) || CONFIG_TANK_SUPPORT_EXCEPTIONS.includes(p.id);
     const activeRouletteProfiles = useMemo(() => (Array.isArray(rouletteProfiles) ? rouletteProfiles : []).filter(p => p && p.enabled !== false).slice(0, 5), [rouletteProfiles]);
     const isRosterMode = rouletteMode === 'roster';
@@ -2065,10 +2073,12 @@ const useRoulette = (rouletteProfiles = []) => {
             pool = POKEMON_DB.filter(p => PICKRATE_BOTTOM_SET.has(p.name));
         else if (filterMode === 'tournament')
             pool = POKEMON_DB.filter(p => TOURNAMENT_META_SET.has(p.name));
-        else if (filterMode === 'carry')
+        else if (filterMode === 'carry') {
             pool = POKEMON_DB.filter(p => ['Attacker', 'Speedster', 'All-Rounder'].includes(p.role) && !CONFIG_TANK_SUPPORT_EXCEPTIONS.includes(p.id));
-        else if (filterMode === 'tank_sup')
+        }
+        else if (filterMode === 'tank_sup') {
             pool = POKEMON_DB.filter(p => ['Defender', 'Supporter'].includes(p.role) || CONFIG_TANK_SUPPORT_EXCEPTIONS.includes(p.id));
+        }
         return pool;
     };
     const getPoolForProfile = (profileConfig) => {
@@ -2087,30 +2097,12 @@ const useRoulette = (rouletteProfiles = []) => {
     const getPool = () => {
         if (!isRosterMode)
             return getBasePool();
+        const configs = activeRouletteProfiles.length ? activeRouletteProfiles : [];
         const map = new Map();
-        activeRouletteProfiles.forEach(config => getPoolForProfile(config).forEach(p => map.set(p.id, p)));
+        configs.forEach(config => getPoolForProfile(config).forEach(p => map.set(p.id, p)));
         return [...map.values()];
     };
-    const makeLanePlan = (count) => {
-        if (count === 1)
-            return [["上レーン", "中央エリア", "下レーン"][Math.floor(Math.random() * 3)]];
-        if (count === 2) {
-            const lane = Math.random() < 0.5 ? '上レーン' : '下レーン';
-            return [lane, lane];
-        }
-        if (count === 3) {
-            const side = Math.random() < 0.5 ? '上レーン' : '下レーン';
-            const lanes = ['中央エリア', side, side];
-            return lanes.sort(() => 0.5 - Math.random());
-        }
-        const lanes = [...LANE_POOL_TEMPLATE];
-        for (let i = lanes.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [lanes[i], lanes[j]] = [lanes[j], lanes[i]];
-        }
-        return lanes.slice(0, count);
-    };
-    const makeRolePlan = (configs, lanes) => {
+    const makeRosterRolePlan = (configs, lanes) => {
         const plan = Array(configs.length).fill('free');
         if (!isRosterMode || !isCompGuaranteeMode || configs.length <= 1)
             return plan;
@@ -2123,45 +2115,71 @@ const useRoulette = (rouletteProfiles = []) => {
         }).filter(idx => idx >= 0);
         if (!supportEligible.length)
             return plan.map(() => 'carry');
-        const maxSupport = Math.min(2, supportEligible.length);
-        const desired = Math.min(maxSupport, configs.length >= 5 ? 2 : 1);
-        const shuffled = supportEligible
+        const desired = Math.min(2, supportEligible.length, configs.length >= 5 ? 2 : 1);
+        supportEligible
             .sort((a, b) => (lanes[a] === '中央エリア') - (lanes[b] === '中央エリア'))
-            .sort(() => 0.5 - Math.random());
-        shuffled.slice(0, desired).forEach(idx => plan[idx] = 'tank_sup');
+            .slice(0, desired)
+            .forEach(idx => plan[idx] = 'tank_sup');
         return plan.map(x => x === 'free' ? 'carry' : x);
     };
     const spin = () => {
+        const scrollToRouletteStage = () => setTimeout(() => {
+            const stage = document.getElementById('roulette-stage');
+            if (stage && typeof stage.scrollIntoView === 'function')
+                stage.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });
+            else
+                window.scrollTo(0, 0);
+        }, 30);
         const activeConfigs = isRosterMode
             ? activeRouletteProfiles
             : [...Array(playerCount)].map((_, i) => ({ id: `normal_${i}`, displayName: `P${i + 1}`, ownedPokemonIds: [], blacklistedPokemonIds: [], poolMode: 'all', enabled: true }));
         if (isRosterMode && !activeConfigs.length) {
-            setPoolError('Rosterモードでは、ROSTER PLAYERSで1人以上ONにしてください。通常モードならRosterなしで回せます。');
+            setPoolError('ロースターモードでは、ロースタープレイヤーで1人以上ONにしてください。通常モードならロースターなしで回せます。');
             setPhase('setup');
             return;
         }
         const emptyConfig = activeConfigs.find(config => getPoolForProfile(config).length === 0);
         if (emptyConfig) {
-            const label = emptyConfig.poolMode === 'roster' ? 'Roster' : emptyConfig.poolMode === 'not_roster' ? 'Roster以外' : 'すべて';
+            const label = emptyConfig.poolMode === 'roster' ? 'ロースター' : emptyConfig.poolMode === 'not_roster' ? 'ロースター以外' : 'すべて';
             setPoolError(`${emptyConfig.displayName || 'プレイヤー'} の条件に合うポケモンがいません。${label}やBlacklistを見直してください。`);
             setPhase('setup');
             return;
         }
+        const currentPool = getPool();
         setPoolError('');
         startSpinSound();
         setPhase('spinning');
         setResults([]);
+        scrollToRouletteStage();
         const isRandomMode = categoryMode === 'random';
-        const modeDef = CATEGORY_MODES.find(m => m.id === categoryMode) || CATEGORY_MODES[0];
+        const modeDef = CATEGORY_MODES.find(m => m.id === categoryMode);
         const itemsCount = isRandomMode ? 8 : modeDef.items.length;
         const degPerItem = 360 / itemsCount;
         const newResults = [];
         const newRotations = [...rotations];
         const usedPokemonIds = new Set();
+        // DBインデックスをモード定義から取得 (Ver 24.0)
         const targetDbIndex = modeDef.dbIndex;
+        let selectedLanes = [];
         const spinPlayerCount = activeConfigs.length;
-        const selectedLanes = makeLanePlan(spinPlayerCount);
-        const rolePlan = makeRolePlan(activeConfigs, selectedLanes);
+        if (spinPlayerCount === 2) {
+            const lane = Math.random() < 0.5 ? '上レーン' : '下レーン';
+            selectedLanes = [lane, lane];
+        }
+        else if (spinPlayerCount === 3) {
+            const side = Math.random() < 0.5 ? '上レーン' : '下レーン';
+            selectedLanes = ['中央エリア', side, side];
+            selectedLanes.sort(() => 0.5 - Math.random());
+        }
+        else {
+            let availableLanes = [...LANE_POOL_TEMPLATE];
+            for (let i = availableLanes.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [availableLanes[i], availableLanes[j]] = [availableLanes[j], availableLanes[i]];
+            }
+            selectedLanes = availableLanes.slice(0, spinPlayerCount);
+        }
+        const rosterRolePlan = makeRosterRolePlan(activeConfigs, selectedLanes);
         let rosterTankSupportCount = 0;
         for (let i = 0; i < spinPlayerCount; i++) {
             const profileConfig = activeConfigs[i];
@@ -2194,22 +2212,22 @@ const useRoulette = (rouletteProfiles = []) => {
                 diff += 360 * 4;
                 newRotations[i] += diff;
                 candidates = currentPoolForPlayer.filter(p => {
+                    // 安全なアクセス (p.cats[undefined]を防ぐ)
                     if (targetDbIndex === null || targetDbIndex === undefined)
                         return true;
                     const cats = p.cats[targetDbIndex];
                     return Array.isArray(cats) ? cats.includes(catIndex) : cats === catIndex;
                 });
-                if (candidates.length === 0)
+                if (candidates.length === 0) {
+                    // My Roster / Roster以外などの抽選範囲を超えないよう、現在のプール内で条件を緩和する
                     candidates = currentPoolForPlayer;
+                }
             }
-            const lane = selectedLanes[i];
             let availableCandidates = candidates.filter(p => !usedPokemonIds.has(p.id));
-            if (availableCandidates.length === 0)
-                availableCandidates = candidates;
+            const lane = spinPlayerCount === 1 ? ["上レーン", "中央エリア", "下レーン"][Math.floor(Math.random() * 3)] : selectedLanes[i];
             let finalCandidates = availableCandidates;
-            const shouldPreferLane = spinPlayerCount > 1 && (isCompGuaranteeMode || isRosterMode);
-            if (shouldPreferLane) {
-                const synergyCandidates = finalCandidates.filter(p => checkSynergy(p, lane) === 'MATCH');
+            if ((isCompGuaranteeMode || isRosterMode) && spinPlayerCount > 1) {
+                const synergyCandidates = availableCandidates.filter(p => checkSynergy(p, lane) === 'MATCH');
                 if (synergyCandidates.length > 0)
                     finalCandidates = synergyCandidates;
             }
@@ -2220,7 +2238,7 @@ const useRoulette = (rouletteProfiles = []) => {
                         finalCandidates = nonSupportCandidates;
                 }
                 if (isCompGuaranteeMode && spinPlayerCount > 1) {
-                    const targetRole = rolePlan[i];
+                    const targetRole = rosterRolePlan[i];
                     const roleCandidates = targetRole === 'tank_sup'
                         ? finalCandidates.filter(isTankOrSupport)
                         : finalCandidates.filter(p => !isTankOrSupport(p));
@@ -2245,8 +2263,10 @@ const useRoulette = (rouletteProfiles = []) => {
                 }
             }
             if (finalCandidates.length === 0)
-                finalCandidates = availableCandidates.length ? availableCandidates : candidates;
-            let picked = [...finalCandidates].sort(() => 0.5 - Math.random())[0];
+                finalCandidates = candidates;
+            let picked = null;
+            let shuffled = [...finalCandidates].sort(() => 0.5 - Math.random());
+            picked = shuffled[0];
             if (picked) {
                 usedPokemonIds.add(picked.id);
                 if (isRosterMode && isTankOrSupport(picked))
@@ -2259,7 +2279,7 @@ const useRoulette = (rouletteProfiles = []) => {
                 playerName: (profileConfig && profileConfig.displayName) || `P${i + 1}`,
                 poolMode: (profileConfig && profileConfig.poolMode) || 'all',
                 pokemon: picked,
-                lane,
+                lane: lane,
                 categoryLabel: categoryName,
                 categoryModeLabel: modeDef.label,
                 isFallback: false,
@@ -2268,13 +2288,15 @@ const useRoulette = (rouletteProfiles = []) => {
             });
         }
         setRotations(newRotations);
+        // 停止タイルと結果表示を一致させるため、当選結果はスピン開始時点で確定させて渡す
+        // （phase が result になるまでは結果UIは出ないため表示上の問題はない）
         setResults(newResults);
         if (spinPlayerCount > 1) {
             const laneOrder = { "上レーン": 1, "中央エリア": 2, "下レーン": 3 };
             newResults.sort((a, b) => laneOrder[a.lane] - laneOrder[b.lane]);
             newResults.forEach((r, idx) => r.displayIndex = idx + 1);
         }
-        else if (newResults[0]) {
+        else {
             newResults[0].displayIndex = 1;
         }
         setTimeout(() => {
@@ -2311,7 +2333,7 @@ const App = () => {
             currentView === 'my_roster' && (React.createElement(MyRosterView, { onBack: handleBackToRoulette, roster: rosterMemory })),
             currentView === 'roulette' && (React.createElement(React.Fragment, null,
                 phase !== 'result' && (React.createElement("div", { className: `w-full flex flex-col items-center duration-500 ${phase === 'setup' ? 'animate-in fade-in slide-in-from-bottom-4' : ''}` },
-                    React.createElement("div", { className: `transition-opacity duration-300 w-full ${phase !== 'setup' ? 'opacity-0 pointer-events-none' : 'opacity-100'}` },
+                    React.createElement("div", { className: `w-full ${phase !== 'setup' ? 'hidden' : 'block'}` },
                         React.createElement(RouletteModeSelector, { mode: rouletteMode, onChange: setRouletteMode }),
                         rouletteMode === 'normal' && React.createElement(PlayerCountSelector, { playerCount: normalPlayerCount, setPlayerCount: setPlayerCount, isCompGuaranteeMode: isCompGuaranteeMode, setIsCompGuaranteeMode: setIsCompGuaranteeMode }),
                         rouletteMode === 'roster' && React.createElement(CompositionToggle, { enabled: isCompGuaranteeMode, onChange: setIsCompGuaranteeMode, playerCount: playerCount, compactLabel: `${playerCount}人` }),
